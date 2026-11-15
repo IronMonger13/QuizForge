@@ -149,64 +149,53 @@ def take_quiz(request, quiz_id):
     if quiz.owner_id == request.user.id:
         return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
     questions = quiz.questions.prefetch_related("choices")
-    # Find an existing unfinished attempt.
     if request.method == "POST":
-        # A submission must belong to an existing unfinished attempt.
-        attempt = get_object_or_404(
-            QuizAttempt,
-            user=request.user,
-            quiz=quiz,
-            status=QuizAttempt.Status.IN_PROGRESS,
-        )
-    else:
-        # Reuse an unfinished attempt if the user refreshes the page.
-        attempt = (
-            QuizAttempt.objects.filter(
-                user=request.user, quiz=quiz, status=QuizAttempt.Status.IN_PROGRESS
-            )
-            .order_by("-started_at")
-            .first()
-        )
-    # Create a new attempt only when opening the quiz.
-    if attempt is None:
-        attempt = QuizAttempt.objects.create(
-            user=request.user,
-            quiz=quiz,
-            total_marks=sum(question.marks for question in questions),
-        )
-    if request.method == "POST":
-        selected_answers = []
-        submission_error = None
-        for question in questions:
-            choice_id = request.POST.get(f"question_{question.id}")
-            if not choice_id:
-                submission_error = "Please answer every question before submitting."
-                break
-            selected_choice = question.choices.filter(id=choice_id).first()
-            if not selected_choice:
-                submission_error = "Invalid answer detected. Please try again."
-                break
-            selected_answers.append((question, selected_choice))
-        if submission_error:
-            return render(
-                request,
-                "quizzes/take_quiz.html",
-                {
-                    "quiz": quiz,
-                    "questions": questions,
-                    "submission_error": submission_error,
-                },
-            )
-        score = sum(
-            question.marks for question, choice in selected_answers if choice.is_correct
-        )
+        # Lock the attempt until the entire submission is processed.
         with transaction.atomic():
+            attempt = get_object_or_404(
+                QuizAttempt.objects.select_for_update(),
+                user=request.user,
+                quiz=quiz,
+                status=QuizAttempt.Status.IN_PROGRESS,
+            )
+            selected_answers = []
+            submission_error = None
+            for question in questions:
+                choice_id = request.POST.get(f"question_{question.id}")
+                if not choice_id:
+                    submission_error = "Please answer every question before submitting."
+                    break
+                selected_choice = question.choices.filter(id=choice_id).first()
+                if not selected_choice:
+                    submission_error = "Invalid answer detected. Please try again."
+                    break
+                selected_answers.append((question, selected_choice))
+            if submission_error:
+                return render(
+                    request,
+                    "quizzes/take_quiz.html",
+                    {
+                        "quiz": quiz,
+                        "questions": questions,
+                        "submission_error": submission_error,
+                    },
+                )
+            score = sum(
+                question.marks
+                for question, choice in selected_answers
+                if choice.is_correct
+            )
             attempt.score = score
             attempt.total_marks = sum(question.marks for question in questions)
             attempt.completed_at = timezone.now()
             attempt.status = QuizAttempt.Status.COMPLETED
             attempt.save(
-                update_fields=["score", "total_marks", "completed_at", "status"]
+                update_fields=[
+                    "score",
+                    "total_marks",
+                    "completed_at",
+                    "status",
+                ]
             )
             for question, selected_choice in selected_answers:
                 is_correct = selected_choice.is_correct
@@ -215,15 +204,34 @@ def take_quiz(request, quiz_id):
                     question=question,
                     selected_choice=selected_choice,
                     is_correct=is_correct,
-                    marks_awarded=question.marks if is_correct else 0,
+                    marks_awarded=(question.marks if is_correct else 0),
                 )
                 answer.full_clean()
                 answer.save()
         return redirect("quizzes:attempt_result", attempt_id=attempt.id)
+    # GET request: reuse an unfinished attempt if one exists.
+    attempt = (
+        QuizAttempt.objects.filter(
+            user=request.user, quiz=quiz, status=QuizAttempt.Status.IN_PROGRESS
+        )
+        .order_by("-started_at")
+        .first()
+    )
+    # Create a new attempt only when opening the quiz.
+    if attempt is None:
+        attempt = QuizAttempt.objects.create(
+            user=request.user,
+            quiz=quiz,
+            total_marks=sum(question.marks for question in questions),
+        )
     return render(
         request,
         "quizzes/take_quiz.html",
-        {"quiz": quiz, "questions": questions, "attempt": attempt},
+        {
+            "quiz": quiz,
+            "questions": questions,
+            "attempt": attempt,
+        },
     )
 
 
