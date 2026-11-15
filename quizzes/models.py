@@ -77,3 +77,32 @@ class Question(models.Model):
 
     def __str__(self):
         return f"{self.quiz.title} - Question {self.order}"
+
+
+class Choice(models.Model):
+
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="choices"
+    )
+
+    choice_text = models.CharField(max_length=255)
+
+    is_correct = models.BooleanField(default=False)
+
+    order = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["question", "order"], name="unique_choice_order_per_question"
+            ),
+            models.UniqueConstraint(
+                fields=["question"],
+                condition=models.Q(is_correct=True),
+                name="unique_correct_choice_per_question",
+            ),
+        ]
+
+    def __str__(self):
+        return self.choice_text
