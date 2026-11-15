@@ -1,7 +1,14 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="#">QuizForge</a>
-        <div class="ms-auto d-flex align-items-center gap-3">
+        <!-- Left side: Brand and navigation -->
+        <div class="d-flex align-items-center gap-4">
+            <a class="navbar-brand fw-bold mb-0"
+               href="{% url 'quizzes:dashboard' %}">QuizForge</a>
+            <a class="nav-link text-light"
+               href="{% url 'quizzes:explore_quizzes' %}">Explore Quizzes</a>
+        </div>
+        <!-- Right side: Account actions -->
+        <div class="d-flex align-items-center gap-3">
             {% if user.is_authenticated %}
                 <span class="text-light">Welcome, {{ user.username }}</span>
                 <form method="post" action="{% url 'accounts:logout' %}">

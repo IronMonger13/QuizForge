@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}
+    {{ quiz.title }} | QuizForge
+{% endblock title %}
+{% block content %}
+    <div class="container py-5">
+        <!-- Quiz heading -->
+        <div class="mb-4">
+            <h2 class="fw-bold">{{ quiz.title }}</h2>
+            <p class="text-muted">{{ quiz.description|default:"No description provided." }}</p>
+            <div class="d-flex gap-3 text-muted small">
+                <span>{{ questions|length }} Questions</span>
+                {% if quiz.time_limit %}
+                    <span>Time Limit: {{ quiz.time_limit }} minutes</span>
+                {% else %}
+                    <span>No Time Limit</span>
+                {% endif %}
+            </div>
+        </div>
+        <hr class="my-4">
+        <!-- Questions -->
+        <form method="post"
+              onsubmit="return confirm('Are you sure you want to submit your answers?');">
+            {% if submission_error %}
+                <div class="alert alert-danger">{{ submission_error }}</div>
+            {% endif %}
+            {% csrf_token %}
+            {% for question in questions %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5 class="fw-semibold">Question {{ forloop.counter }}</h5>
+                            <span class="badge bg-light text-dark">
+                                {{ question.marks }} mark{{ question.marks|pluralize }}
+                            </span>
+                        </div>
+                        <p class="mb-4">{{ question.question_text }}</p>
+                        <!-- Answer choices -->
+                        <div class="row g-3">
+                            {% for choice in question.choices.all %}
+                                <div class="col-md-6">
+                                    <label class="border rounded p-3 d-flex align-items-center gap-2 h-100 w-100">
+                                        <input type="radio"
+                                               name="question_{{ question.id }}"
+                                               value="{{ choice.id }}"
+                                               required>
+                                        <span>{{ choice.choice_text }}</span>
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            <!-- Submit -->
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'quizzes:explore_quizzes' %}"
+                   class="btn btn-outline-secondary">Exit Quiz</a>
+                <button type="submit" class="btn btn-primary px-4">Submit Answers</button>
+            </div>
+        </form>
+    </div>
+{% endblock content %}
