@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 
 
 # Create your models here.
 class Category(models.Model):
-
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -18,35 +18,27 @@ class Category(models.Model):
 
 
 class Quiz(models.Model):
-
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         PUBLISHED = "published", "Published"
 
     title = models.CharField(max_length=200)
-
     description = models.TextField(blank=True)
-
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quizzes"
     )
-
     category = models.ForeignKey(
         "Category", on_delete=models.PROTECT, related_name="quizzes"
     )
-
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT
     )
-
     time_limit = models.PositiveIntegerField(
         null=True,
         blank=True,
         help_text="Time limit in minutes. Leave empty for no time limit.",
     )
-
     created_at = models.DateTimeField(auto_now_add=True)
-
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -57,13 +49,9 @@ class Quiz(models.Model):
 
 
 class Question(models.Model):
-
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
-
     question_text = models.TextField()
-
     marks = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
-
     order = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
         help_text="Position of this question within the quiz.",
@@ -82,15 +70,11 @@ class Question(models.Model):
 
 
 class Choice(models.Model):
-
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="choices"
     )
-
     choice_text = models.CharField(max_length=255)
-
     is_correct = models.BooleanField(default=False)
-
     order = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)],
     )
@@ -113,7 +97,6 @@ class Choice(models.Model):
 
 
 class QuizAttempt(models.Model):
-
     class Status(models.TextChoices):
         IN_PROGRESS = "in_progress", "In Progress"
         COMPLETED = "completed", "Completed"
@@ -121,17 +104,11 @@ class QuizAttempt(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quiz_attempts"
     )
-
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="attempts")
-
     started_at = models.DateTimeField(auto_now_add=True)
-
     completed_at = models.DateTimeField(null=True, blank=True)
-
     score = models.PositiveIntegerField(default=0)
-
     total_marks = models.PositiveIntegerField(default=0)
-
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.IN_PROGRESS
     )
@@ -144,15 +121,12 @@ class QuizAttempt(models.Model):
 
 
 class AttemptAnswer(models.Model):
-
     attempt = models.ForeignKey(
         QuizAttempt, on_delete=models.CASCADE, related_name="answers"
     )
-
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="attempt_answers"
     )
-
     selected_choice = models.ForeignKey(
         Choice,
         on_delete=models.SET_NULL,
@@ -160,9 +134,7 @@ class AttemptAnswer(models.Model):
         blank=True,
         related_name="selected_answers",
     )
-
     is_correct = models.BooleanField(default=False)
-
     marks_awarded = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -174,3 +146,18 @@ class AttemptAnswer(models.Model):
 
     def __str__(self):
         return f"{self.attempt} - Question {self.question.order}"
+
+    def clean(self):
+        super().clean()
+
+        if self.attempt_id and self.question_id:
+            if self.attempt.quiz_id != self.question.quiz_id:
+                raise ValidationError(
+                    "The question does not belong to the attempted quiz."
+                )
+
+        if self.selected_choice_id and self.question_id:
+            if self.selected_choice.question_id != self.question_id:
+                raise ValidationError(
+                    "The selected choice does not belong to this question."
+                )
