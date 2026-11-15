@@ -27,6 +27,7 @@ class Quiz(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quizzes"
     )
+    is_sample = models.BooleanField(default=False)
     category = models.ForeignKey(
         "Category", on_delete=models.PROTECT, related_name="quizzes"
     )
