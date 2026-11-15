@@ -137,3 +137,36 @@ class QuizAttempt(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title}"
+
+
+class AttemptAnswer(models.Model):
+
+    attempt = models.ForeignKey(
+        QuizAttempt, on_delete=models.CASCADE, related_name="answers"
+    )
+
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="attempt_answers"
+    )
+
+    selected_choice = models.ForeignKey(
+        Choice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="selected_answers",
+    )
+
+    is_correct = models.BooleanField(default=False)
+
+    marks_awarded = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["attempt", "question"], name="unique_question_per_attempt"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.attempt} - Question {self.question.order}"
