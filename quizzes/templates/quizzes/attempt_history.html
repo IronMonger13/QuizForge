@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}
+    Attempt History | QuizForge
+{% endblock title %}
+{% block content %}
+    <div class="container py-5">
+        <!-- Page heading -->
+        <div class="mb-4">
+            <h2 class="fw-bold">Attempt History</h2>
+            <p class="text-muted">Review your previous quiz attempts and track your scores.</p>
+        </div>
+        <hr class="my-4">
+        <!-- Attempt history table -->
+        {% if attempts %}
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Quiz</th>
+                                <th>Completed On</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in attempts %}
+                                <tr>
+                                    <td class="fw-semibold">{{ attempt.quiz.title }}</td>
+                                    <td>{{ attempt.completed_at|date:"d M Y, h:i A" }}</td>
+                                    <td>{{ attempt.score }} / {{ attempt.total_marks }}</td>
+                                    <td>
+                                        {% if attempt.total_marks > 0 %}
+                                            {% widthratio attempt.score attempt.total_marks 100 %}%
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'quizzes:attempt_result' attempt.id %}"
+                                           class="btn btn-sm btn-outline-primary">View Result</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <!-- Empty state -->
+            <div class="text-center border rounded p-5">
+                <h5 class="fw-bold">No quiz attempts yet.</h5>
+                <p class="text-muted">Complete your first quiz to see your attempt history here.</p>
+                <a href="{% url 'quizzes:explore_quizzes' %}" class="btn btn-primary">Explore Quizzes</a>
+            </div>
+        {% endif %}
+        <!-- Back to dashboard -->
+        <div class="mt-4">
+            <a href="{% url 'quizzes:dashboard' %}"
+               class="btn btn-outline-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+{% endblock content %}

@@ -12,6 +12,33 @@
             </div>
             <a href="{% url 'quizzes:create_quiz' %}" class="btn btn-primary">+ Create Quiz</a>
         </div>
+        <!-- Dashboard Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Total Attempts</p>
+                        <h3 class="fw-bold mb-0">{{ attempt_stats.total_attempts }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Average Score</p>
+                        <h3 class="fw-bold mb-0">{{ attempt_stats.average_score|default:0|floatformat:1 }}%</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Highest Score</p>
+                        <h3 class="fw-bold mb-0">{{ attempt_stats.highest_score|default:0|floatformat:1 }}%</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
         <hr class="my-4">
         <!-- My quizzes -->
         <div class="mb-4">

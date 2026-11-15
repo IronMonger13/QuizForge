@@ -6,6 +6,10 @@
                href="{% url 'quizzes:dashboard' %}">QuizForge</a>
             <a class="nav-link text-light"
                href="{% url 'quizzes:explore_quizzes' %}">Explore Quizzes</a>
+            {% if user.is_authenticated %}
+                <a class="nav-link text-light"
+                   href="{% url 'quizzes:attempt_history' %}">Attempt History</a>
+            {% endif %}
         </div>
         <!-- Right side: Account actions -->
         <div class="d-flex align-items-center gap-3">

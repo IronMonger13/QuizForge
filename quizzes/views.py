@@ -1,7 +1,14 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import (
+    Avg,
+    Count,
+    ExpressionWrapper,
+    F,
+    FloatField,
+    Max,
+)
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
@@ -17,7 +24,28 @@ def dashboard(request):
         .select_related("category")
         .annotate(question_count=Count("questions"))
     )
-    return render(request, "quizzes/dashboard.html", {"my_quizzes": my_quizzes})
+    completed_attempts = QuizAttempt.objects.filter(
+        user=request.user,
+        status=QuizAttempt.Status.COMPLETED,
+        total_marks__gt=0,
+    )
+    percentage_expression = ExpressionWrapper(
+        F("score") * 100.0 / F("total_marks"),
+        output_field=FloatField(),
+    )
+    attempt_stats = completed_attempts.aggregate(
+        total_attempts=Count("id"),
+        average_score=Avg(percentage_expression),
+        highest_score=Max(percentage_expression),
+    )
+    return render(
+        request,
+        "quizzes/dashboard.html",
+        {
+            "my_quizzes": my_quizzes,
+            "attempt_stats": attempt_stats,
+        },
+    )
 
 
 @login_required
@@ -262,3 +290,15 @@ def explore_quizzes(request):
         "quizzes/explore_quizzes.html",
         {"published_quizzes": published_quizzes},
     )
+
+
+@login_required
+def attempt_history(request):
+    attempts = (
+        QuizAttempt.objects.filter(
+            user=request.user, status=QuizAttempt.Status.COMPLETED
+        )
+        .select_related("quiz")
+        .order_by("-completed_at")
+    )
+    return render(request, "quizzes/attempt_history.html", {"attempts": attempts})
