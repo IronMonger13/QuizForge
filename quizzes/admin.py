@@ -24,6 +24,8 @@ class QuizAdmin(admin.ModelAdmin):
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
         if obj and obj.attempts.exists():
             return False
         return super().has_delete_permission(request, obj)
@@ -64,6 +66,8 @@ class QuestionAdmin(admin.ModelAdmin):
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
         if obj and obj.quiz.attempts.exists():
             return False
         return super().has_delete_permission(request, obj)
@@ -93,11 +97,15 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     inlines = [AttemptAnswerInline]
 
     def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
         if obj and obj.status == QuizAttempt.Status.COMPLETED:
             return False
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
         if obj and obj.status == QuizAttempt.Status.COMPLETED:
             return False
         return super().has_delete_permission(request, obj)
@@ -116,11 +124,15 @@ class AttemptAnswerAdmin(admin.ModelAdmin):
     search_fields = ("attempt__user__username", "question__question_text")
 
     def has_change_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
         if obj and obj.attempt.status == QuizAttempt.Status.COMPLETED:
             return False
         return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
         if obj and obj.attempt.status == QuizAttempt.Status.COMPLETED:
             return False
         return super().has_delete_permission(request, obj)
