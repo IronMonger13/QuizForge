@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinValueValidator
 
 
 # Create your models here.
@@ -61,10 +62,11 @@ class Question(models.Model):
 
     question_text = models.TextField()
 
-    marks = models.PositiveIntegerField(default=1)
+    marks = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
 
     order = models.PositiveIntegerField(
-        help_text="Position of this question within the quiz."
+        validators=[MinValueValidator(1)],
+        help_text="Position of this question within the quiz.",
     )
 
     class Meta:
@@ -89,7 +91,9 @@ class Choice(models.Model):
 
     is_correct = models.BooleanField(default=False)
 
-    order = models.PositiveSmallIntegerField()
+    order = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)],
+    )
 
     class Meta:
         ordering = ["order"]
