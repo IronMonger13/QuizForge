@@ -7,6 +7,7 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("create/", views.create_quiz, name="create_quiz"),
     path("quiz/<int:quiz_id>/edit/", views.edit_quiz, name="edit_quiz"),
+    path("quiz/<int:quiz_id>/delete/", views.delete_quiz, name="delete_quiz"),
     path("quiz/<int:quiz_id>/add-question/", views.add_question, name="add_question"),
     path("quiz/<int:quiz_id>/", views.quiz_detail, name="quiz_detail"),
     path("quiz/<int:quiz_id>/publish/", views.publish_quiz, name="publish_quiz"),

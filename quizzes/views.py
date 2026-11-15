@@ -92,6 +92,30 @@ def edit_quiz(request, quiz_id):
 
 
 @login_required
+def delete_quiz(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        owner=request.user,
+        is_sample=False,
+    )
+
+    # Prevent deletion if the quiz has existing attempts.
+    if quiz.attempts.exists():
+        return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+    if request.method == "POST":
+        quiz.delete()
+        return redirect("quizzes:dashboard")
+
+    return render(
+        request,
+        "quizzes/delete_quiz.html",
+        {"quiz": quiz},
+    )
+
+
+@login_required
 def add_question(request, quiz_id):
     quiz = get_object_or_404(
         Quiz, id=quiz_id, owner=request.user, status=Quiz.Status.DRAFT
