@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Category, Quiz, Question, Choice, QuizAttempt, AttemptAnswer
 
 
@@ -17,11 +18,36 @@ class QuizAdmin(admin.ModelAdmin):
     search_fields = ("title", "description", "owner__username")
     ordering = ("-created_at",)
 
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.attempts.exists():
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.attempts.exists():
+            return False
+        return super().has_delete_permission(request, obj)
+
 
 class ChoiceInline(admin.TabularInline):
     model = Choice
     extra = 4
     max_num = 4
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.quiz.attempts.exists():
+            return False
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.quiz.attempts.exists():
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.quiz.attempts.exists():
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 @admin.register(Question)
@@ -31,6 +57,16 @@ class QuestionAdmin(admin.ModelAdmin):
     search_fields = ("question_text", "quiz__title")
     ordering = ("quiz", "order")
     inlines = [ChoiceInline]
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.quiz.attempts.exists():
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.quiz.attempts.exists():
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 class AttemptAnswerInline(admin.TabularInline):
@@ -56,6 +92,16 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     ordering = ("-started_at",)
     inlines = [AttemptAnswerInline]
 
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.status == QuizAttempt.Status.COMPLETED:
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.status == QuizAttempt.Status.COMPLETED:
+            return False
+        return super().has_delete_permission(request, obj)
+
 
 @admin.register(AttemptAnswer)
 class AttemptAnswerAdmin(admin.ModelAdmin):
@@ -68,3 +114,13 @@ class AttemptAnswerAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_correct",)
     search_fields = ("attempt__user__username", "question__question_text")
+
+    def has_change_permission(self, request, obj=None):
+        if obj and obj.attempt.status == QuizAttempt.Status.COMPLETED:
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.attempt.status == QuizAttempt.Status.COMPLETED:
+            return False
+        return super().has_delete_permission(request, obj)
