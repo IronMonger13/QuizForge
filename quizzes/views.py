@@ -1,19 +1,13 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
-from django.db.models import (
-    Avg,
-    Count,
-    ExpressionWrapper,
-    F,
-    FloatField,
-    Max,
-)
+from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Max, Q
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.core.paginator import Paginator
 
 from .forms import QuizForm, QuestionForm, ChoiceFormSet
-from .models import Quiz, Question, QuizAttempt, AttemptAnswer
+from .models import Category, Quiz, Question, QuizAttempt, AttemptAnswer
 
 
 # Create your views here.
@@ -280,15 +274,50 @@ def attempt_result(request, attempt_id):
 
 
 def explore_quizzes(request):
+    search_query = request.GET.get("q", "").strip()
+    category_id = request.GET.get("category", "")
+
+    categories = Category.objects.all().order_by("name")
+
     published_quizzes = (
         Quiz.objects.filter(status=Quiz.Status.PUBLISHED)
         .select_related("category", "owner")
         .annotate(question_count=Count("questions"))
     )
+
+    if search_query:
+        published_quizzes = published_quizzes.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )
+
+    if category_id:
+        if Category.objects.filter(id=category_id).exists():
+            published_quizzes = published_quizzes.filter(category_id=category_id)
+        else:
+            category_id = ""
+
+    sample_paginator = Paginator(
+        published_quizzes.filter(is_sample=True),
+        6,
+    )
+    community_paginator = Paginator(
+        published_quizzes.filter(is_sample=False),
+        6,
+    )
+
+    sample_quizzes = sample_paginator.get_page(request.GET.get("sample_page"))
+    community_quizzes = community_paginator.get_page(request.GET.get("community_page"))
+
     return render(
         request,
         "quizzes/explore_quizzes.html",
-        {"published_quizzes": published_quizzes},
+        {
+            "sample_quizzes": sample_quizzes,
+            "community_quizzes": community_quizzes,
+            "categories": categories,
+            "search_query": search_query,
+            "selected_category": category_id,
+        },
     )
 
 
