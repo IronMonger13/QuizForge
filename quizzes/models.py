@@ -53,3 +53,27 @@ class Quiz(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Question(models.Model):
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+
+    question_text = models.TextField()
+
+    marks = models.PositiveIntegerField(default=1)
+
+    order = models.PositiveIntegerField(
+        help_text="Position of this question within the quiz."
+    )
+
+    class Meta:
+        ordering = ["order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["quiz", "order"], name="unique_question_order_per_quiz"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.quiz.title} - Question {self.order}"
