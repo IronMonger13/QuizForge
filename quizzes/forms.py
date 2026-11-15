@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import formset_factory
+from django.forms import formset_factory, modelformset_factory
 
 from .models import Quiz, Question, Choice
 
@@ -71,4 +71,15 @@ class ChoiceForm(forms.ModelForm):
 
 ChoiceFormSet = formset_factory(
     ChoiceForm, extra=4, min_num=4, max_num=4, validate_min=True, validate_max=True
+)
+
+EditChoiceFormSet = modelformset_factory(
+    Choice,
+    form=ChoiceForm,
+    extra=0,
+    min_num=4,
+    max_num=4,
+    validate_min=True,
+    validate_max=True,
+    can_delete=False,
 )

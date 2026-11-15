@@ -6,8 +6,8 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.core.paginator import Paginator
 
-from .forms import QuizForm, QuestionForm, ChoiceFormSet
-from .models import Category, Quiz, Question, QuizAttempt, AttemptAnswer
+from .forms import QuizForm, QuestionForm, ChoiceFormSet, EditChoiceFormSet
+from .models import Category, Quiz, Question, QuizAttempt, AttemptAnswer, Choice
 
 
 # Create your views here.
@@ -161,6 +161,91 @@ def add_question(request, quiz_id):
             "quiz": quiz,
             "question_form": question_form,
             "choice_formset": choice_formset,
+        },
+    )
+
+
+@login_required
+def edit_question(request, question_id):
+    question = get_object_or_404(
+        Question,
+        id=question_id,
+        quiz__owner=request.user,
+        quiz__status=Quiz.Status.DRAFT,
+        quiz__is_sample=False,
+    )
+
+    quiz = question.quiz
+
+    # Prevent editing questions if the quiz already has attempts.
+    if quiz.attempts.exists():
+        return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+    if request.method == "POST":
+        question_form = QuestionForm(
+            request.POST,
+            instance=question,
+        )
+
+        correct_answer_error = None
+
+        with transaction.atomic():
+            # Clear the existing correct answer before validating the
+            # formset. This avoids a temporary conflict with the
+            # database constraint allowing only one correct choice.
+            Choice.objects.filter(question=question).update(is_correct=False)
+
+            choice_formset = EditChoiceFormSet(
+                request.POST,
+                queryset=question.choices.order_by("order"),
+            )
+
+            question_valid = question_form.is_valid()
+            choices_valid = choice_formset.is_valid()
+
+            if question_valid and choices_valid:
+                correct_count = sum(
+                    1 for form in choice_formset if form.cleaned_data.get("is_correct")
+                )
+
+                if correct_count == 1:
+                    question_form.save()
+
+                    for form in choice_formset:
+                        choice = form.save(commit=False)
+                        choice.question = question
+                        choice.full_clean()
+                        choice.save()
+
+                    return redirect(
+                        "quizzes:quiz_detail",
+                        quiz_id=quiz.id,
+                    )
+
+                correct_answer_error = "Please select exactly one correct answer."
+
+            # Invalid submissions must not leave the existing correct
+            # answer cleared in the database.
+            transaction.set_rollback(True)
+
+    else:
+        question_form = QuestionForm(instance=question)
+
+        choice_formset = EditChoiceFormSet(
+            queryset=question.choices.order_by("order"),
+        )
+
+        correct_answer_error = None
+
+    return render(
+        request,
+        "quizzes/edit_question.html",
+        {
+            "quiz": quiz,
+            "question": question,
+            "question_form": question_form,
+            "choice_formset": choice_formset,
+            "correct_answer_error": correct_answer_error,
         },
     )
 

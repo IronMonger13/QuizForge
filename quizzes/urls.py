@@ -17,4 +17,9 @@ urlpatterns = [
         "attempt/<int:attempt_id>/result/", views.attempt_result, name="attempt_result"
     ),
     path("attempt-history/", views.attempt_history, name="attempt_history"),
+    path(
+        "question/<int:question_id>/edit/",
+        views.edit_question,
+        name="edit_question",
+    ),
 ]

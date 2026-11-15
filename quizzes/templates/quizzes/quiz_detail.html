@@ -78,6 +78,10 @@
                             </div>
                         {% endfor %}
                     </div>
+                    {% if quiz.status == "draft" %}
+                        <a href="{% url 'quizzes:edit_question' question.id %}"
+                           class="btn btn-sm btn-outline-secondary">Edit Question</a>
+                    {% endif %}
                 </div>
             </div>
         {% empty %}
