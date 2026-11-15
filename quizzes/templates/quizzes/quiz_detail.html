@@ -30,6 +30,8 @@
             </div>
             <div class="d-flex gap-2">
                 {% if quiz.status == "draft" %}
+                    <a href="{% url 'quizzes:edit_quiz' quiz.id %}"
+                       class="btn btn-outline-secondary">Edit Details</a>
                     <a href="{% url 'quizzes:add_question' quiz.id %}"
                        class="btn btn-outline-primary">Add Question</a>
                     <form method="post" action="{% url 'quizzes:publish_quiz' quiz.id %}">

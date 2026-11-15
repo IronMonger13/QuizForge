@@ -58,6 +58,40 @@ def create_quiz(request):
 
 
 @login_required
+def edit_quiz(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        owner=request.user,
+        status=Quiz.Status.DRAFT,
+        is_sample=False,
+    )
+
+    # Prevent editing quizzes that already have attempts.
+    if quiz.attempts.exists():
+        return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+    if request.method == "POST":
+        form = QuizForm(request.POST, instance=quiz)
+
+        if form.is_valid():
+            form.save()
+            return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+    else:
+        form = QuizForm(instance=quiz)
+
+    return render(
+        request,
+        "quizzes/edit_quiz.html",
+        {
+            "form": form,
+            "quiz": quiz,
+        },
+    )
+
+
+@login_required
 def add_question(request, quiz_id):
     quiz = get_object_or_404(
         Quiz, id=quiz_id, owner=request.user, status=Quiz.Status.DRAFT
