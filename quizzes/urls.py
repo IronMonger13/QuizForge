@@ -14,6 +14,11 @@ urlpatterns = [
         name="quiz_attempt_history",
     ),
     path("quiz/<int:quiz_id>/add-question/", views.add_question, name="add_question"),
+    path(
+        "quiz/<int:quiz_id>/overview/",
+        views.quiz_overview,
+        name="quiz_overview",
+    ),
     path("quiz/<int:quiz_id>/", views.quiz_detail, name="quiz_detail"),
     path("quiz/<int:quiz_id>/publish/", views.publish_quiz, name="publish_quiz"),
     path(
@@ -23,6 +28,16 @@ urlpatterns = [
     ),
     path("explore/", views.explore_quizzes, name="explore_quizzes"),
     path("quiz/<int:quiz_id>/attempt/", views.take_quiz, name="take_quiz"),
+    path(
+        "quiz/<int:quiz_id>/feedback/",
+        views.submit_quiz_feedback,
+        name="submit_quiz_feedback",
+    ),
+    path(
+        "quiz/<int:quiz_id>/feedback/delete/",
+        views.delete_quiz_feedback,
+        name="delete_quiz_feedback",
+    ),
     path(
         "attempt/<int:attempt_id>/result/", views.attempt_result, name="attempt_result"
     ),

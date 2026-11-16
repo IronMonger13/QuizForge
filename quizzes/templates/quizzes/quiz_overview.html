@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}
+    {{ quiz.title }} | QuizForge
+{% endblock title %}
+{% block content %}
+    <div class="container py-5">
+        <!-- Back Navigation -->
+        <div class="mb-4">
+            <a href="{% url 'quizzes:explore_quizzes' %}"
+               class="text-decoration-none text-muted">
+                <i class="bi bi-arrow-left"></i> Back to Explore Quizzes
+            </a>
+        </div>
+        <!-- Quiz Information -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <span class="badge bg-success">Published Quiz</span>
+                    {% if feedback_stats.total_reviews %}
+                        <span class="text-warning fw-semibold">
+                            <i class="bi bi-star-fill"></i>
+                            {{ feedback_stats.average_rating|floatformat:1 }}/5
+                            <span class="text-muted fw-normal">
+                                ({{ feedback_stats.total_reviews }} review{{ feedback_stats.total_reviews|pluralize }})
+                            </span>
+                        </span>
+                    {% else %}
+                        <span class="text-muted small">No ratings yet</span>
+                    {% endif %}
+                </div>
+                <h2 class="fw-bold mb-2">{{ quiz.title }}</h2>
+                <p class="text-muted mb-4">{{ quiz.description|default:"No description provided." }}</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="bg-light rounded p-3 h-100">
+                            <small class="text-muted d-block">Category</small>
+                            <strong>{{ quiz.category.name }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-light rounded p-3 h-100">
+                            <small class="text-muted d-block">Questions</small>
+                            <strong>{{ question_count }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-light rounded p-3 h-100">
+                            <small class="text-muted d-block">Completed Attempts</small>
+                            <strong>{{ attempt_count }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-light rounded p-3 h-100">
+                            <small class="text-muted d-block">Time Limit</small>
+                            <strong>
+                                {% if quiz.time_limit %}
+                                    {{ quiz.time_limit }} minutes
+                                {% else %}
+                                    No limit
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+                <p class="small text-muted mb-4">
+                    Created by <strong>{{ quiz.owner.username }}</strong>
+                </p>
+                <!-- Attempt Button -->
+                {% if user.is_authenticated %}
+                    {% if quiz.owner_id == user.id %}
+                        <a href="{% url 'quizzes:quiz_detail' quiz.id %}"
+                           class="btn btn-outline-secondary">Manage Your Quiz</a>
+                    {% else %}
+                        <a href="{% url 'quizzes:take_quiz' quiz.id %}" class="btn btn-primary">
+                            <i class="bi bi-play-fill"></i> Attempt Quiz
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'accounts:login' %}" class="btn btn-primary">Login to Attempt</a>
+                {% endif %}
+            </div>
+        </div>
+        <!-- Participant Feedback -->
+        <section class="mt-5">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div>
+                    <h4 class="fw-bold mb-1">Participant Feedback</h4>
+                    <p class="text-muted mb-0">Reviews shared by users who have completed this quiz.</p>
+                </div>
+                {% if can_submit_feedback %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'quizzes:submit_quiz_feedback' quiz.id %}"
+                           class="btn btn-outline-primary">
+                            {% if existing_feedback %}
+                                <i class="bi bi-pencil"></i> Edit Your Feedback
+                            {% else %}
+                                <i class="bi bi-star"></i> Write a Review
+                            {% endif %}
+                        </a>
+                        {% if existing_feedback %}
+                            <form method="post"
+                                  action="{% url 'quizzes:delete_quiz_feedback' quiz.id %}"
+                                  onsubmit="return confirm('Are you sure you want to delete your feedback? This action cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Delete Feedback
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Rating Summary -->
+            {% if feedback_stats.total_reviews %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-4 text-center mb-3 mb-md-0">
+                                <h1 class="display-4 fw-bold mb-0">
+                                    {{ feedback_stats.average_rating|floatformat:1 }}
+                                </h1>
+                                <div class="text-warning fs-5">
+                                    {% for star in "12345" %}
+                                        {% if forloop.counter <= feedback_stats.average_rating %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted">
+                                    Based on {{ feedback_stats.total_reviews }}
+                                    review{{ feedback_stats.total_reviews|pluralize }}
+                                </small>
+                            </div>
+                            <div class="col-md-8">
+                                <p class="text-muted mb-0">Average participant rating for this quiz.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Individual Reviews -->
+                {% for feedback in feedback_list %}
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                <div>
+                                    <h6 class="fw-bold mb-1">{{ feedback.user.username }}</h6>
+                                    <div class="text-warning mb-2">
+                                        {% for star in "12345" %}
+                                            {% if forloop.counter <= feedback.rating %}
+                                                ★
+                                            {% else %}
+                                                ☆
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ feedback.created_at|date:"d M Y" }}
+                                    {% if feedback.updated_at > feedback.created_at %}
+                                        (Edited)
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% if feedback.comment %}
+                                <p class="text-muted mb-0">{{ feedback.comment|linebreaksbr }}</p>
+                            {% else %}
+                                <p class="text-muted small fst-italic mb-0">No written feedback provided.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center border rounded p-5">
+                    <i class="bi bi-chat-square-text fs-1 text-muted"></i>
+                    <h5 class="fw-bold mt-3">No reviews yet</h5>
+                    <p class="text-muted mb-0">Be the first to share your experience after completing this quiz.</p>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock content %}

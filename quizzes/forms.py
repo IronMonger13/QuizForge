@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import formset_factory, modelformset_factory
 
-from .models import Quiz, Question, Choice
+from .models import Quiz, Question, Choice, QuizFeedback
 
 
 class QuizForm(forms.ModelForm):
@@ -67,6 +67,38 @@ class ChoiceForm(forms.ModelForm):
             "is_correct": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
         labels = {"choice_text": "Answer Choice", "is_correct": "Correct Answer"}
+
+
+class QuizFeedbackForm(forms.ModelForm):
+    class Meta:
+        model = QuizFeedback
+        fields = ["rating", "comment"]
+
+        widgets = {
+            "rating": forms.Select(
+                choices=[
+                    (5, "5 - Excellent"),
+                    (4, "4 - Very Good"),
+                    (3, "3 - Good"),
+                    (2, "2 - Fair"),
+                    (1, "1 - Poor"),
+                ],
+                attrs={"class": "form-select"},
+            ),
+            "comment": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Share your experience with this quiz...",
+                    "rows": 4,
+                    "maxlength": 1000,
+                }
+            ),
+        }
+
+        labels = {
+            "rating": "Your Rating",
+            "comment": "Your Feedback (Optional)",
+        }
 
 
 ChoiceFormSet = formset_factory(

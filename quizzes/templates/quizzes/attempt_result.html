@@ -43,8 +43,15 @@
                         </div>
                     </div>
                 </div>
-                <a href="{% url 'quizzes:explore_quizzes' %}"
-                   class="btn btn-primary mt-4">Explore More Quizzes</a>
+                <div class="d-flex justify-content-center flex-wrap gap-2 mt-4">
+                    {% if attempt.user_id == request.user.id and attempt.quiz.owner_id != request.user.id %}
+                        <a href="{% url 'quizzes:quiz_overview' attempt.quiz.id %}"
+                           class="btn btn-outline-primary">
+                            <i class="bi bi-star"></i> Rate This Quiz
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'quizzes:explore_quizzes' %}" class="btn btn-primary">Explore More Quizzes</a>
+                </div>
             </div>
         </div>
         <!-- Answer review -->

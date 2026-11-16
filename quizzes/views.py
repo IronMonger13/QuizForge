@@ -6,10 +6,25 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.contrib import messages
 from datetime import timedelta
 
-from .forms import QuizForm, QuestionForm, ChoiceFormSet, EditChoiceFormSet
-from .models import Category, Quiz, Question, QuizAttempt, AttemptAnswer, Choice
+from .forms import (
+    QuizForm,
+    QuestionForm,
+    ChoiceFormSet,
+    EditChoiceFormSet,
+    QuizFeedbackForm,
+)
+from .models import (
+    Category,
+    Quiz,
+    Question,
+    QuizAttempt,
+    AttemptAnswer,
+    Choice,
+    QuizFeedback,
+)
 
 
 # Create your views here.
@@ -409,6 +424,17 @@ def quiz_detail(request, quiz_id):
     else:
         quiz_stats["average_completion"] = None
 
+    # Feedback statistics.
+    feedback_queryset = quiz.feedback.select_related("user")
+
+    feedback_stats = feedback_queryset.aggregate(
+        total_reviews=Count("id"),
+        average_rating=Avg("rating"),
+    )
+
+    # Retrieve all feedback.
+    feedback_list = feedback_queryset.order_by("-created_at")
+
     return render(
         request,
         "quizzes/quiz_detail.html",
@@ -416,6 +442,8 @@ def quiz_detail(request, quiz_id):
             "quiz": quiz,
             "questions": questions,
             "quiz_stats": quiz_stats,
+            "feedback_stats": feedback_stats,
+            "feedback_list": feedback_list,
         },
     )
 
@@ -851,6 +879,101 @@ def save_quiz_answer(request, attempt_id):
 
 
 @login_required
+def submit_quiz_feedback(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        status=Quiz.Status.PUBLISHED,
+    )
+
+    # Quiz creators cannot review their own quizzes.
+    if quiz.owner_id == request.user.id:
+        return redirect("quizzes:quiz_overview", quiz_id=quiz.id)
+
+    # Only users who have completed an attempt can submit feedback.
+    has_completed_attempt = QuizAttempt.objects.filter(
+        user=request.user,
+        quiz=quiz,
+        status=QuizAttempt.Status.COMPLETED,
+    ).exists()
+
+    if not has_completed_attempt:
+        return redirect("quizzes:quiz_overview", quiz_id=quiz.id)
+
+    # Retrieve an existing review without creating a new one.
+    feedback = QuizFeedback.objects.filter(
+        user=request.user,
+        quiz=quiz,
+    ).first()
+
+    if request.method == "POST":
+        form = QuizFeedbackForm(
+            request.POST,
+            instance=feedback,
+        )
+
+        if form.is_valid():
+            saved_feedback = form.save(commit=False)
+            saved_feedback.user = request.user
+            saved_feedback.quiz = quiz
+            saved_feedback.save()
+
+            messages.success(
+                request,
+                "Your feedback has been saved successfully.",
+            )
+
+            return redirect(
+                "quizzes:quiz_overview",
+                quiz_id=quiz.id,
+            )
+
+    else:
+        form = QuizFeedbackForm(instance=feedback)
+
+    return render(
+        request,
+        "quizzes/submit_feedback.html",
+        {
+            "quiz": quiz,
+            "form": form,
+            "is_update": feedback is not None,
+        },
+    )
+
+
+@login_required
+@require_POST
+def delete_quiz_feedback(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+    )
+
+    # Quiz creators cannot manage participant feedback.
+    if quiz.owner_id == request.user.id:
+        return redirect("quizzes:explore_quizzes")
+
+    feedback = get_object_or_404(
+        QuizFeedback,
+        quiz=quiz,
+        user=request.user,
+    )
+
+    feedback.delete()
+
+    messages.success(
+        request,
+        "Your feedback has been deleted successfully.",
+    )
+
+    if quiz.status == Quiz.Status.PUBLISHED:
+        return redirect("quizzes:quiz_overview", quiz_id=quiz.id)
+
+    return redirect("quizzes:explore_quizzes")
+
+
+@login_required
 def attempt_result(request, attempt_id):
     attempt = get_object_or_404(
         QuizAttempt.objects.select_related("quiz", "user").filter(
@@ -980,6 +1103,52 @@ def explore_quizzes(request):
             "selected_category": category_id,
         },
     )
+
+
+def quiz_overview(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz.objects.select_related("category", "owner"),
+        id=quiz_id,
+        status=Quiz.Status.PUBLISHED,
+    )
+
+    # Fetch participant feedback.
+    feedback_list = quiz.feedback.select_related("user").order_by("-created_at")
+
+    feedback_stats = feedback_list.aggregate(
+        total_reviews=Count("id"),
+        average_rating=Avg("rating"),
+    )
+
+    # Check whether the current user is eligible to submit feedback.
+    can_submit_feedback = False
+    existing_feedback = None
+
+    if request.user.is_authenticated:
+        has_completed_attempt = QuizAttempt.objects.filter(
+            user=request.user,
+            quiz=quiz,
+            status=QuizAttempt.Status.COMPLETED,
+        ).exists()
+
+        can_submit_feedback = has_completed_attempt and quiz.owner_id != request.user.id
+
+        if can_submit_feedback:
+            existing_feedback = quiz.feedback.filter(user=request.user).first()
+
+    context = {
+        "quiz": quiz,
+        "question_count": quiz.questions.count(),
+        "attempt_count": quiz.attempts.filter(
+            status=QuizAttempt.Status.COMPLETED
+        ).count(),
+        "feedback_list": feedback_list,
+        "feedback_stats": feedback_stats,
+        "can_submit_feedback": can_submit_feedback,
+        "existing_feedback": existing_feedback,
+    }
+
+    return render(request, "quizzes/quiz_overview.html", context)
 
 
 @login_required

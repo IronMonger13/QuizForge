@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}
+    {% if is_update %}Edit Feedback{% else %}Review Quiz{% endif %} | QuizForge
+{% endblock title %}
+{% block content %}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
+                <!-- Page Heading -->
+                <div class="mb-4">
+                    <h2 class="fw-bold">
+                        {% if is_update %}
+                            Edit Your Feedback
+                        {% else %}
+                            Review Quiz
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Share your experience with
+                        <strong>{{ quiz.title }}</strong>.
+                    </p>
+                </div>
+                <!-- Feedback Form -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <!-- Rating -->
+                            <div class="mb-4">
+                                <label for="{{ form.rating.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.rating.label }}
+                                </label>
+                                {{ form.rating }}
+                                {% for error in form.rating.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <!-- Comment -->
+                            <div class="mb-4">
+                                <label for="{{ form.comment.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.comment.label }}
+                                </label>
+                                {{ form.comment }}
+                                {% for error in form.comment.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                                <small class="text-muted">Maximum 1,000 characters.</small>
+                            </div>
+                            <!-- Non-field Errors -->
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                            {% endif %}
+                            <!-- Actions -->
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    {% if is_update %}
+                                        Update Feedback
+                                    {% else %}
+                                        Submit Feedback
+                                    {% endif %}
+                                </button>
+                                <a href="{% url 'quizzes:quiz_detail' quiz.id %}"
+                                   class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

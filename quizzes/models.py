@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 
 
@@ -163,3 +163,45 @@ class AttemptAnswer(models.Model):
                 raise ValidationError(
                     "The selected choice does not belong to this question."
                 )
+
+
+class QuizFeedback(models.Model):
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="quiz_feedback",
+    )
+
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="feedback",
+    )
+
+    rating = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
+
+    comment = models.TextField(
+        blank=True,
+        max_length=1000,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "quiz"],
+                name="unique_feedback_per_user_quiz",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.quiz.title} ({self.rating}/5)"

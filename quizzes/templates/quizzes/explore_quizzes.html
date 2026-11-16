@@ -91,14 +91,10 @@
                                 <div class="mt-auto pt-3">
                                     {% if user.is_authenticated and quiz.owner_id == user.id %}
                                         <a href="{% url 'quizzes:quiz_detail' quiz.id %}"
-                                           class="btn btn-outline-secondary w-100">View Your Quiz</a>
-                                    {% elif user.is_authenticated %}
-                                        <a href="{% url 'quizzes:take_quiz' quiz.id %}"
-                                           class="btn btn-primary w-100">Attempt Quiz</a>
+                                           class="btn btn-outline-secondary w-100">Manage Your Quiz</a>
                                     {% else %}
-                                        <a href="{% url 'accounts:login' %}" class="btn btn-primary w-100">
-                                            Login to Attempt
-                                        </a>
+                                        <a href="{% url 'quizzes:quiz_overview' quiz.id %}"
+                                           class="btn btn-primary w-100">View Quiz</a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -186,14 +182,10 @@
                                 <div class="mt-auto pt-3">
                                     {% if user.is_authenticated and quiz.owner_id == user.id %}
                                         <a href="{% url 'quizzes:quiz_detail' quiz.id %}"
-                                           class="btn btn-outline-secondary w-100">View Your Quiz</a>
-                                    {% elif user.is_authenticated %}
-                                        <a href="{% url 'quizzes:take_quiz' quiz.id %}"
-                                           class="btn btn-primary w-100">Attempt Quiz</a>
+                                           class="btn btn-outline-secondary w-100">Manage Your Quiz</a>
                                     {% else %}
-                                        <a href="{% url 'accounts:login' %}" class="btn btn-primary w-100">
-                                            Login to Attempt
-                                        </a>
+                                        <a href="{% url 'quizzes:quiz_overview' quiz.id %}"
+                                           class="btn btn-primary w-100">View Quiz</a>
                                     {% endif %}
                                 </div>
                             </div>

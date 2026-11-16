@@ -4,7 +4,7 @@
 {% endblock title %}
 {% block content %}
     <div class="container py-5">
-        <!-- Quiz heading -->
+        <!-- Quiz Heading -->
         {% if publish_error %}
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 {{ publish_error }}
@@ -115,6 +115,81 @@
                 </div>
             {% endif %}
         {% endif %}
+        <!-- Quiz Feedback -->
+        <hr class="my-4">
+        <div class="mb-3">
+            <h4 class="fw-bold">Quiz Feedback</h4>
+            <p class="text-muted">See what participants think about your quiz.</p>
+        </div>
+        <!-- Feedback Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Average Rating</p>
+                        <h3 class="fw-bold mb-1">
+                            {% if feedback_stats.average_rating %}
+                                {{ feedback_stats.average_rating|floatformat:1 }}
+                                <span class="text-warning">★</span>
+                                <small class="text-muted fs-6">/ 5</small>
+                            {% else %}
+                                No ratings yet
+                            {% endif %}
+                        </h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Total Reviews</p>
+                        <h3 class="fw-bold mb-0">{{ feedback_stats.total_reviews }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Individual Reviews -->
+        <div class="mb-4">
+            {% for feedback in feedback_list %}
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ feedback.user.username }}</h6>
+                                <div class="text-warning mb-2">
+                                    {% for star in "12345" %}
+                                        {% if forloop.counter <= feedback.rating %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                {{ feedback.created_at|date:"d M Y" }}
+                                {% if feedback.updated_at > feedback.created_at %}
+                                    (Edited)
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% if feedback.comment %}
+                            <p class="mb-0 text-muted">{{ feedback.comment|linebreaksbr }}</p>
+                        {% else %}
+                            <p class="text-muted small fst-italic mb-0">No written feedback provided.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-center border rounded p-5">
+                    <h5 class="fw-bold">No feedback yet</h5>
+                    <p class="text-muted mb-0">
+                        Participant ratings and comments will appear here
+                        once users submit their feedback.
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
         <!-- Questions -->
         <div class="mb-3">
             <h4 class="fw-bold">Questions</h4>
@@ -133,7 +208,7 @@
                     <div class="row">
                         {% for choice in question.choices.all %}
                             <div class="col-md-6 mb-2">
-                                <div class="border rounded p-3 {% if choice.is_correct %} border-success bg-success-subtle {% endif %}">
+                                <div class="border rounded p-3 {% if choice.is_correct %}border-success bg-success-subtle{% endif %}">
                                     {{ forloop.counter }}.
                                     {{ choice.choice_text }}
                                     {% if choice.is_correct %}
@@ -146,8 +221,6 @@
                     {% if quiz.status == "draft" %}
                         <a href="{% url 'quizzes:edit_question' question.id %}"
                            class="btn btn-sm btn-outline-secondary">Edit Question</a>
-                    {% endif %}
-                    {% if quiz.status == "draft" %}
                         <a href="{% url 'quizzes:delete_question' question.id %}"
                            class="btn btn-sm btn-outline-danger">Delete Question</a>
                     {% endif %}
