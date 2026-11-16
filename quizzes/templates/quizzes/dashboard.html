@@ -98,6 +98,7 @@
             </div>
         </div>
         <!-- My quizzes -->
+        <!-- My quizzes -->
         <div class="mb-4">
             <h4 class="fw-bold">My Quizzes</h4>
             <p class="text-muted">Your created quizzes appear here.</p>
@@ -107,6 +108,7 @@
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body p-4">
+                            <!-- Quiz status and question count -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="badge {% if quiz.status == 'published' %}bg-success{% else %}bg-secondary{% endif %}">
                                     {{ quiz.get_status_display }}
@@ -117,12 +119,54 @@
                             <p class="text-muted small">
                                 {{ quiz.description|default:"No description provided."|truncatewords:15 }}
                             </p>
-                            <p class="small mb-3">
-                                <strong>Category:</strong>
-                                {{ quiz.category.name }}
+                            <p class="small mb-2">
+                                <strong>Category:</strong> {{ quiz.category.name }}
                             </p>
+                            <p class="small text-muted mb-3">
+                                <strong>Attempts:</strong> {{ quiz.attempt_count }}
+                            </p>
+                            <!-- Main management action -->
                             <a href="{% url 'quizzes:quiz_detail' quiz.id %}"
-                               class="btn btn-outline-primary w-100">Manage Quiz</a>
+                               class="btn btn-outline-primary w-100 mb-2">Manage Quiz</a>
+                            <!-- Published quiz actions -->
+                            {% if quiz.status == "published" %}
+                                {% if quiz.attempt_count > 0 %}
+                                    <a href="{% url 'quizzes:quiz_attempt_history' quiz.id %}"
+                                       class="btn btn-outline-secondary w-100 mb-2">View Attempts</a>
+                                {% endif %}
+                                {% if not quiz.is_sample %}
+                                    <form method="post"
+                                          action="{% url 'quizzes:unpublish_quiz' quiz.id %}"
+                                          onsubmit="return confirm('Unpublish this quiz? Existing attempts and results will be preserved.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger w-100">
+                                            Unpublish Quiz
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <!-- Draft quiz actions -->
+                            {% else %}
+                                {% if quiz.attempt_count == 0 and not quiz.is_sample %}
+                                    <div class="d-flex gap-2 mb-2">
+                                        <a href="{% url 'quizzes:edit_quiz' quiz.id %}"
+                                           class="btn btn-outline-secondary flex-fill">Edit</a>
+                                        <a href="{% url 'quizzes:delete_quiz' quiz.id %}"
+                                           class="btn btn-outline-danger flex-fill">Delete</a>
+                                    </div>
+                                {% endif %}
+                                {% if not quiz.is_sample %}
+                                    <form method="post"
+                                          action="{% url 'quizzes:publish_quiz' quiz.id %}"
+                                          onsubmit="return confirm('Publish this quiz? It will become available to other users.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success w-100">Publish Quiz</button>
+                                    </form>
+                                {% endif %}
+                                {% if quiz.attempt_count > 0 %}
+                                    <a href="{% url 'quizzes:quiz_attempt_history' quiz.id %}"
+                                       class="btn btn-outline-secondary w-100 mt-2">View Attempts</a>
+                                {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>

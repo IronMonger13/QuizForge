@@ -19,7 +19,10 @@ def dashboard(request):
     my_quizzes = (
         Quiz.objects.filter(owner=request.user)
         .select_related("category")
-        .annotate(question_count=Count("questions"))
+        .annotate(
+            question_count=Count("questions", distinct=True),
+            attempt_count=Count("attempts", distinct=True),
+        )
     )
 
     # Quiz creation statistics.
