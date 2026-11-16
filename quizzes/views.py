@@ -771,7 +771,10 @@ def explore_quizzes(request):
     published_quizzes = (
         Quiz.objects.filter(status=Quiz.Status.PUBLISHED)
         .select_related("category", "owner")
-        .annotate(question_count=Count("questions"))
+        .annotate(
+            question_count=Count("questions", distinct=True),
+            attempt_count=Count("attempts", distinct=True),
+        )
     )
 
     if search_query:

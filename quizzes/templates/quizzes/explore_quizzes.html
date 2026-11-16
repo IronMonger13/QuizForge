@@ -57,7 +57,11 @@
                             <div class="card-body p-4 d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <span class="badge bg-primary">Sample Quiz</span>
-                                    <small class="text-muted">{{ quiz.question_count }} questions</small>
+                                    <small class="text-muted text-end">
+                                        {{ quiz.question_count }} questions
+                                        <br>
+                                        {{ quiz.attempt_count }} attempts
+                                    </small>
                                 </div>
                                 <h5 class="fw-bold">{{ quiz.title }}</h5>
                                 <p class="text-muted small">
@@ -147,7 +151,11 @@
                             <div class="card-body p-4 d-flex flex-column">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <span class="badge bg-success">Published</span>
-                                    <small class="text-muted">{{ quiz.question_count }} questions</small>
+                                    <small class="text-muted text-end">
+                                        {{ quiz.question_count }} questions
+                                        <br>
+                                        {{ quiz.attempt_count }} attempts
+                                    </small>
                                 </div>
                                 <h5 class="fw-bold">{{ quiz.title }}</h5>
                                 <p class="text-muted small">
