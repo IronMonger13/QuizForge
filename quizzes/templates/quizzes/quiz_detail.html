@@ -46,6 +46,16 @@
                        class="btn btn-outline-primary">
                         <i class="bi bi-people"></i> View All Attempts
                     </a>
+                    {% if not quiz.is_sample %}
+                        <form method="post"
+                              action="{% url 'quizzes:unpublish_quiz' quiz.id %}"
+                              onsubmit="return confirm('Are you sure you want to unpublish this quiz? Users will no longer be able to start new attempts. Existing results will be preserved.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-eye-slash"></i> Unpublish Quiz
+                            </button>
+                        </form>
+                    {% endif %}
                 {% endif %}
                 {% if not quiz.is_sample and not quiz.attempts.exists %}
                     <a href="{% url 'quizzes:delete_quiz' quiz.id %}"

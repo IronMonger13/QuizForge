@@ -499,6 +499,23 @@ def publish_quiz(request, quiz_id):
 
 
 @login_required
+@require_POST
+def unpublish_quiz(request, quiz_id):
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        owner=request.user,
+        status=Quiz.Status.PUBLISHED,
+        is_sample=False,
+    )
+
+    quiz.status = Quiz.Status.DRAFT
+    quiz.save(update_fields=["status", "updated_at"])
+
+    return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+
+@login_required
 def take_quiz(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
