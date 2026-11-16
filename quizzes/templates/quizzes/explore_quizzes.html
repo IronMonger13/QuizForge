@@ -8,16 +8,16 @@
         <div class="mb-5">
             <h2 class="fw-bold">Explore Quizzes</h2>
             <p class="text-muted">Discover quizzes, test your knowledge and challenge yourself.</p>
-            <!-- Search and category filters -->
+            <!-- Search, category and sorting filters -->
             <form method="get" class="row g-3 mt-3">
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <input type="text"
                            name="q"
                            class="form-control"
                            placeholder="Search quizzes by title or description..."
                            value="{{ search_query }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <select name="category" class="form-select">
                         <option value="">All Categories</option>
                         {% for category in categories %}
@@ -29,11 +29,20 @@
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <select name="sort" class="form-select">
+                        <option value="newest" {% if selected_sort == "newest" %}selected{% endif %}>Newest</option>
+                        <option value="most_attempted"
+                                {% if selected_sort == "most_attempted" %}selected{% endif %}>Popular</option>
+                        <option value="alphabetical"
+                                {% if selected_sort == "alphabetical" %}selected{% endif %}>A–Z</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-search"></i> Search
                     </button>
                 </div>
-                {% if search_query or selected_category %}
+                {% if search_query or selected_category or selected_sort != "newest" %}
                     <div class="col-12">
                         <a href="{% url 'quizzes:explore_quizzes' %}"
                            class="btn btn-sm btn-outline-secondary">Clear Filters</a>
@@ -111,7 +120,7 @@
                         {% if sample_quizzes.has_previous %}
                             <li class="page-item">
                                 <a class="page-link"
-                                   href="?q={{ search_query|urlencode }}&category={{ selected_category }}&sample_page={{ sample_quizzes.previous_page_number }}">
+                                   href="?q={{ search_query|urlencode }}&category={{ selected_category }}&sort={{ selected_sort }}&sample_page={{ sample_quizzes.previous_page_number }}">
                                     Previous
                                 </a>
                             </li>
@@ -125,7 +134,7 @@
                         {% if sample_quizzes.has_next %}
                             <li class="page-item">
                                 <a class="page-link"
-                                   href="?q={{ search_query|urlencode }}&category={{ selected_category }}&sample_page={{ sample_quizzes.next_page_number }}">
+                                   href="?q={{ search_query|urlencode }}&category={{ selected_category }}&sort={{ selected_sort }}&sample_page={{ sample_quizzes.next_page_number }}">
                                     Next
                                 </a>
                             </li>
@@ -203,36 +212,36 @@
                         </div>
                     </div>
                 {% endfor %}
-                <!-- Community Quizzes Pagination -->
-                {% if community_quizzes.has_other_pages %}
-                    <nav class="mt-4" aria-label="Community quiz pagination">
-                        <ul class="pagination justify-content-center">
-                            {% if community_quizzes.has_previous %}
-                                <li class="page-item">
-                                    <a class="page-link"
-                                       href="?q={{ search_query|urlencode }}&category={{ selected_category }}&community_page={{ community_quizzes.previous_page_number }}">
-                                        Previous
-                                    </a>
-                                </li>
-                            {% endif %}
-                            <li class="page-item active">
-                                <span class="page-link">
-                                    {{ community_quizzes.number }} /
-                                    {{ community_quizzes.paginator.num_pages }}
-                                </span>
-                            </li>
-                            {% if community_quizzes.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link"
-                                       href="?q={{ search_query|urlencode }}&category={{ selected_category }}&community_page={{ community_quizzes.next_page_number }}">
-                                        Next
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
-                {% endif %}
             </div>
+            <!-- Community Quizzes Pagination -->
+            {% if community_quizzes.has_other_pages %}
+                <nav class="mt-4" aria-label="Community quiz pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if community_quizzes.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?q={{ search_query|urlencode }}&category={{ selected_category }}&sort={{ selected_sort }}&community_page={{ community_quizzes.previous_page_number }}">
+                                    Previous
+                                </a>
+                            </li>
+                        {% endif %}
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {{ community_quizzes.number }} /
+                                {{ community_quizzes.paginator.num_pages }}
+                            </span>
+                        </li>
+                        {% if community_quizzes.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?q={{ search_query|urlencode }}&category={{ selected_category }}&sort={{ selected_sort }}&community_page={{ community_quizzes.next_page_number }}">
+                                    Next
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
         </section>
     </div>
 {% endblock content %}

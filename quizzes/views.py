@@ -788,6 +788,21 @@ def explore_quizzes(request):
         else:
             category_id = ""
 
+    # Sorting options.
+    sort_options = {
+        "newest": ("-created_at", "-id"),
+        "most_attempted": ("-attempt_count", "-created_at"),
+        "alphabetical": ("title", "-created_at"),
+    }
+
+    selected_sort = request.GET.get("sort", "newest")
+
+    # Fall back to newest if an invalid sorting option is provided.
+    if selected_sort not in sort_options:
+        selected_sort = "newest"
+
+    published_quizzes = published_quizzes.order_by(*sort_options[selected_sort])
+
     sample_paginator = Paginator(
         published_quizzes.filter(is_sample=True),
         6,
