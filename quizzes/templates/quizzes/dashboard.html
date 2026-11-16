@@ -4,7 +4,7 @@
 {% endblock title %}
 {% block content %}
     <div class="container py-5">
-        <!-- Dashboard heading -->
+        <!-- Dashboard Heading -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2 class="fw-bold mb-1">Welcome, {{ request.user.username }}!</h2>
@@ -12,7 +12,7 @@
             </div>
             <a href="{% url 'quizzes:create_quiz' %}" class="btn btn-primary">+ Create Quiz</a>
         </div>
-        <!-- Dashboard Statistics -->
+        <!-- Personal Attempt Statistics -->
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm h-100">
@@ -66,12 +66,57 @@
                 </div>
             </div>
         </div>
+        <!-- Creator Performance Analytics -->
         <hr class="my-4">
+        <div class="mb-3">
+            <h4 class="fw-bold">Quiz Performance</h4>
+            <p class="text-muted">See how other users are performing on your quizzes.</p>
+        </div>
+        <div class="row g-3 mb-4">
+            <!-- Total Attempts Received -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Total Attempts Received</p>
+                        <h3 class="fw-bold mb-0">{{ creator_performance_stats.total_attempts }}</h3>
+                    </div>
+                </div>
+            </div>
+            <!-- Average Participant Score -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Average Participant Score</p>
+                        <h3 class="fw-bold mb-0">
+                            {{ creator_performance_stats.average_score|default:0|floatformat:1 }}%
+                        </h3>
+                    </div>
+                </div>
+            </div>
+            <!-- Most Popular Quiz -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Most Popular Quiz</p>
+                        {% if most_popular_quiz %}
+                            <h5 class="fw-bold mb-1">{{ most_popular_quiz.title|truncatewords:5 }}</h5>
+                            <small class="text-muted">
+                                {{ most_popular_quiz.completed_attempt_count }}
+                                completed attempts
+                            </small>
+                        {% else %}
+                            <h5 class="fw-bold mb-1">No data yet</h5>
+                            <small class="text-muted">Your quiz performance will appear here.</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Recent Activity -->
         <hr class="my-4">
         <div class="mb-3">
             <h4 class="fw-bold">Recent Activity</h4>
-            <p class="text-muted">Your five most recent completed quiz attempts.</p>
+            <p class="text-muted">Your three most recent completed quiz attempts.</p>
         </div>
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-0">
@@ -97,8 +142,7 @@
                 {% endfor %}
             </div>
         </div>
-        <!-- My quizzes -->
-        <!-- My quizzes -->
+        <!-- My Quizzes -->
         <div class="mb-4">
             <h4 class="fw-bold">My Quizzes</h4>
             <p class="text-muted">Your created quizzes appear here.</p>
@@ -108,7 +152,7 @@
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100 border-0 shadow-sm">
                         <div class="card-body p-4">
-                            <!-- Quiz status and question count -->
+                            <!-- Quiz Status and Question Count -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="badge {% if quiz.status == 'published' %}bg-success{% else %}bg-secondary{% endif %}">
                                     {{ quiz.get_status_display }}
@@ -120,15 +164,17 @@
                                 {{ quiz.description|default:"No description provided."|truncatewords:15 }}
                             </p>
                             <p class="small mb-2">
-                                <strong>Category:</strong> {{ quiz.category.name }}
+                                <strong>Category:</strong>
+                                {{ quiz.category.name }}
                             </p>
                             <p class="small text-muted mb-3">
-                                <strong>Attempts:</strong> {{ quiz.attempt_count }}
+                                <strong>Attempts:</strong>
+                                {{ quiz.attempt_count }}
                             </p>
-                            <!-- Main management action -->
+                            <!-- Main Management Action -->
                             <a href="{% url 'quizzes:quiz_detail' quiz.id %}"
                                class="btn btn-outline-primary w-100 mb-2">Manage Quiz</a>
-                            <!-- Published quiz actions -->
+                            <!-- Published Quiz Actions -->
                             {% if quiz.status == "published" %}
                                 {% if quiz.attempt_count > 0 %}
                                     <a href="{% url 'quizzes:quiz_attempt_history' quiz.id %}"
@@ -144,7 +190,7 @@
                                         </button>
                                     </form>
                                 {% endif %}
-                                <!-- Draft quiz actions -->
+                                <!-- Draft Quiz Actions -->
                             {% else %}
                                 {% if quiz.attempt_count == 0 and not quiz.is_sample %}
                                     <div class="d-flex gap-2 mb-2">

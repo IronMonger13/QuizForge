@@ -22,6 +22,11 @@ def dashboard(request):
         .annotate(
             question_count=Count("questions", distinct=True),
             attempt_count=Count("attempts", distinct=True),
+            completed_attempt_count=Count(
+                "attempts",
+                filter=Q(attempts__status=QuizAttempt.Status.COMPLETED),
+                distinct=True,
+            ),
         )
     )
 
@@ -56,7 +61,25 @@ def dashboard(request):
         highest_score=Max(percentage_expression),
     )
 
-    # Latest five completed quiz attempts.
+    # Performance statistics for quizzes created by the user.
+    creator_attempts = QuizAttempt.objects.filter(
+        quiz__owner=request.user,
+        status=QuizAttempt.Status.COMPLETED,
+        total_marks__gt=0,
+    )
+
+    creator_performance_stats = creator_attempts.aggregate(
+        total_attempts=Count("id"),
+        average_score=Avg(percentage_expression),
+    )
+
+    most_popular_quiz = (
+        my_quizzes.filter(completed_attempt_count__gt=0)
+        .order_by("-completed_attempt_count", "-created_at")
+        .first()
+    )
+
+    # Latest three completed quiz attempts.
     recent_attempts = (
         QuizAttempt.objects.filter(
             user=request.user,
@@ -81,6 +104,8 @@ def dashboard(request):
             "quiz_stats": quiz_stats,
             "attempt_stats": attempt_stats,
             "recent_attempts": recent_attempts,
+            "creator_performance_stats": creator_performance_stats,
+            "most_popular_quiz": most_popular_quiz,
         },
     )
 
