@@ -335,10 +335,60 @@ def delete_question(request, question_id):
 
 @login_required
 def quiz_detail(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, owner=request.user)
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        owner=request.user,
+    )
+
     questions = quiz.questions.prefetch_related("choices")
+    question_count = quiz.questions.count()
+
+    # Completed attempts for this quiz.
+    completed_attempts = quiz.attempts.filter(
+        status=QuizAttempt.Status.COMPLETED,
+        total_marks__gt=0,
+    ).annotate(
+        answered_count=Count(
+            "answers",
+            filter=Q(answers__selected_choice__isnull=False),
+            distinct=True,
+        )
+    )
+
+    # Calculate performance metrics.
+    score_percentage = ExpressionWrapper(
+        F("score") * 100.0 / F("total_marks"),
+        output_field=FloatField(),
+    )
+
+    quiz_stats = completed_attempts.aggregate(
+        total_attempts=Count("id"),
+        average_score=Avg(score_percentage),
+        highest_score=Max(score_percentage),
+    )
+
+    # Average percentage of questions answered per attempt.
+    if question_count > 0:
+        completion_percentage = ExpressionWrapper(
+            F("answered_count") * 100.0 / question_count,
+            output_field=FloatField(),
+        )
+
+        quiz_stats["average_completion"] = completed_attempts.aggregate(
+            average_completion=Avg(completion_percentage)
+        )["average_completion"]
+    else:
+        quiz_stats["average_completion"] = None
+
     return render(
-        request, "quizzes/quiz_detail.html", {"quiz": quiz, "questions": questions}
+        request,
+        "quizzes/quiz_detail.html",
+        {
+            "quiz": quiz,
+            "questions": questions,
+            "quiz_stats": quiz_stats,
+        },
     )
 
 

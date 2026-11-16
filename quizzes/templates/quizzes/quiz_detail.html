@@ -50,6 +50,57 @@
             </div>
         </div>
         <hr class="my-4">
+        <!-- Quiz Performance Analytics -->
+        {% if quiz.status == "published" %}
+            <div class="mb-4">
+                <h4 class="fw-bold">Quiz Performance</h4>
+                <p class="text-muted">See how users are performing on your quiz.</p>
+            </div>
+            <div class="row g-3 mb-4">
+                <!-- Total Attempts -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Total Attempts</p>
+                            <h3 class="fw-bold mb-0">{{ quiz_stats.total_attempts }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <!-- Average Score -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Average Score</p>
+                            <h3 class="fw-bold mb-0">{{ quiz_stats.average_score|default:0|floatformat:1 }}%</h3>
+                        </div>
+                    </div>
+                </div>
+                <!-- Highest Score -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Highest Score</p>
+                            <h3 class="fw-bold mb-0">{{ quiz_stats.highest_score|default:0|floatformat:1 }}%</h3>
+                        </div>
+                    </div>
+                </div>
+                <!-- Average Completion -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Average Completion</p>
+                            <h3 class="fw-bold mb-0">{{ quiz_stats.average_completion|default:0|floatformat:1 }}%</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if quiz_stats.total_attempts == 0 %}
+                <div class="alert alert-light border mb-4">
+                    No completed attempts yet. Performance statistics will appear
+                    once someone completes this quiz.
+                </div>
+            {% endif %}
+        {% endif %}
         <!-- Questions -->
         <div class="mb-3">
             <h4 class="fw-bold">Questions</h4>
