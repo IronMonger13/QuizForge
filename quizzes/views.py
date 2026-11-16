@@ -393,6 +393,64 @@ def quiz_detail(request, quiz_id):
 
 
 @login_required
+def quiz_attempt_history(request, quiz_id):
+    # Only the quiz creator can access this page.
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        owner=request.user,
+    )
+
+    total_questions = quiz.questions.count()
+
+    # Retrieve completed attempts and calculate answer statistics.
+    attempts = (
+        quiz.attempts.filter(
+            status=QuizAttempt.Status.COMPLETED,
+        )
+        .select_related("user")
+        .annotate(
+            answered_questions=Count(
+                "answers",
+                filter=Q(answers__selected_choice__isnull=False),
+                distinct=True,
+            ),
+            correct_answers=Count(
+                "answers",
+                filter=Q(
+                    answers__selected_choice__isnull=False,
+                    answers__is_correct=True,
+                ),
+                distinct=True,
+            ),
+        )
+        .order_by("-completed_at")
+    )
+
+    # Calculate individual attempt statistics.
+    for attempt in attempts:
+        attempt.incorrect_answers = attempt.answered_questions - attempt.correct_answers
+
+        attempt.unanswered_questions = total_questions - attempt.answered_questions
+
+        attempt.percentage = (
+            (attempt.score / attempt.total_marks) * 100
+            if attempt.total_marks > 0
+            else 0
+        )
+
+    return render(
+        request,
+        "quizzes/quiz_attempt_history.html",
+        {
+            "quiz": quiz,
+            "attempts": attempts,
+            "total_questions": total_questions,
+        },
+    )
+
+
+@login_required
 @require_POST
 def publish_quiz(request, quiz_id):
     quiz = get_object_or_404(
@@ -750,10 +808,11 @@ def save_quiz_answer(request, attempt_id):
 @login_required
 def attempt_result(request, attempt_id):
     attempt = get_object_or_404(
-        QuizAttempt.objects.select_related("quiz", "user"),
+        QuizAttempt.objects.select_related("quiz", "user").filter(
+            Q(user=request.user) | Q(quiz__owner=request.user),
+            status=QuizAttempt.Status.COMPLETED,
+        ),
         id=attempt_id,
-        user=request.user,
-        status=QuizAttempt.Status.COMPLETED,
     )
 
     # Retrieve every question from the quiz.
