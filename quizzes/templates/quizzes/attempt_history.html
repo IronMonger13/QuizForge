@@ -7,10 +7,9 @@
         <!-- Page heading -->
         <div class="mb-4">
             <h2 class="fw-bold">Attempt History</h2>
-            <p class="text-muted">Review your previous quiz attempts and track your scores.</p>
+            <p class="text-muted">Review your previous quiz attempts and track your performance.</p>
         </div>
         <hr class="my-4">
-        <!-- Attempt history table -->
         {% if attempts %}
             <div class="card border-0 shadow-sm">
                 <div class="table-responsive">
@@ -21,6 +20,7 @@
                                 <th>Completed On</th>
                                 <th>Score</th>
                                 <th>Percentage</th>
+                                <th>Performance</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -30,12 +30,15 @@
                                     <td class="fw-semibold">{{ attempt.quiz.title }}</td>
                                     <td>{{ attempt.completed_at|date:"d M Y, h:i A" }}</td>
                                     <td>{{ attempt.score }} / {{ attempt.total_marks }}</td>
+                                    <td class="fw-semibold">{{ attempt.percentage }}%</td>
                                     <td>
-                                        {% if attempt.total_marks > 0 %}
-                                            {% widthratio attempt.score attempt.total_marks 100 %}%
-                                        {% else %}
-                                            N/A
-                                        {% endif %}
+                                        <div class="d-flex flex-wrap gap-2 small">
+                                            <span class="text-success">{{ attempt.correct_answers }} Correct</span>
+                                            <span class="text-danger">{{ attempt.incorrect_answers }} Incorrect</span>
+                                            <span class="text-warning">
+                                                {{ attempt.unanswered_questions }} Unanswered
+                                            </span>
+                                        </div>
                                     </td>
                                     <td>
                                         <a href="{% url 'quizzes:attempt_result' attempt.id %}"

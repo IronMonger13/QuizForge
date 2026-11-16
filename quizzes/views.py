@@ -774,11 +774,45 @@ def explore_quizzes(request):
 
 @login_required
 def attempt_history(request):
-    attempts = (
+    attempts = list(
         QuizAttempt.objects.filter(
-            user=request.user, status=QuizAttempt.Status.COMPLETED
+            user=request.user,
+            status=QuizAttempt.Status.COMPLETED,
         )
         .select_related("quiz")
+        .prefetch_related("answers", "quiz__questions")
         .order_by("-completed_at")
     )
-    return render(request, "quizzes/attempt_history.html", {"attempts": attempts})
+
+    for attempt in attempts:
+        answers = list(attempt.answers.all())
+
+        total_questions = attempt.quiz.questions.count()
+
+        correct_answers = sum(1 for answer in answers if answer.is_correct)
+
+        answered_questions = sum(
+            1 for answer in answers if answer.selected_choice_id is not None
+        )
+
+        incorrect_answers = answered_questions - correct_answers
+
+        unanswered_questions = total_questions - answered_questions
+
+        percentage = (
+            (attempt.score / attempt.total_marks) * 100
+            if attempt.total_marks > 0
+            else 0
+        )
+
+        attempt.total_questions = total_questions
+        attempt.correct_answers = correct_answers
+        attempt.incorrect_answers = incorrect_answers
+        attempt.unanswered_questions = unanswered_questions
+        attempt.percentage = round(percentage, 2)
+
+    return render(
+        request,
+        "quizzes/attempt_history.html",
+        {"attempts": attempts},
+    )
