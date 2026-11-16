@@ -1,3 +1,298 @@
+/* =========================================
+   QUIZFORGE - GLOBAL DESIGN SYSTEM
+========================================= */
+
+/* ---------- CSS VARIABLES ---------- */
+
+:root {
+    --primary: #5145CD;
+    --primary-dark: #4035B0;
+    --primary-light: #EFEDFF;
+
+    --background: #F5F6FA;
+    --surface: #FFFFFF;
+
+    --text-primary: #25243A;
+    --text-secondary: #747488;
+
+    --border-color: #E7E8EF;
+
+    --success: #198754;
+    --danger: #DC3545;
+
+    --border-radius: 12px;
+
+    --shadow-sm: 0 2px 10px rgba(25, 25, 60, 0.05);
+    --shadow-md: 0 5px 20px rgba(25, 25, 60, 0.08);
+}
+
+
+/* ---------- GLOBAL ---------- */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Arial, sans-serif;
+
+    background-color: var(--background);
+    color: var(--text-primary);
+
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+p {
+    color: inherit;
+}
+
+a {
+    text-decoration: none;
+}
+
+
+/* ---------- BUTTONS ---------- */
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 9px 16px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+
+/* ---------- CARDS ---------- */
+
+.card {
+    background-color: var(--surface);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.shadow-sm {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.card:hover {
+    transition: box-shadow 0.2s ease;
+}
+
+
+/* ---------- FORMS ---------- */
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border-color: var(--border-color);
+    padding: 10px 12px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(81, 69, 205, 0.12);
+}
+
+.form-label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+
+/* ---------- BADGES ---------- */
+
+.badge {
+    font-weight: 500;
+    padding: 6px 9px;
+    border-radius: 6px;
+}
+
+
+/* ---------- ALERTS ---------- */
+
+.alert {
+    border-radius: 10px;
+}
+
+
+/* ---------- AUTHENTICATION ---------- */
+
 .auth-card {
     max-width: 480px;
+    width: 100%;
+}
+
+
+/* Explore Quizzes Page */
+.explore-page-container {
+    padding-top: 2rem;
+    padding-bottom: 3rem;
+}
+
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 576px) {
+
+    .container {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .btn {
+        padding: 8px 13px;
+    }
+
+}
+
+
+
+/* =========================================
+   NAVBAR
+========================================= */
+
+.navbar {
+    padding: 12px 0;
+    background-color: var(--surface);
+    z-index: 1030;
+}
+
+/* Brand */
+
+.navbar-brand {
+    font-size: 1.3rem;
+    letter-spacing: -0.5px;
+}
+
+.navbar-logo {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background-color: var(--primary);
+    color: #FFFFFF;
+    font-size: 1.1rem;
+}
+
+.navbar-brand-text {
+    color: var(--text-primary);
+}
+
+/* Navigation Links */
+
+.navbar .nav-link {
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.navbar .nav-link:hover {
+    color: var(--primary);
+    background-color: var(--primary-light);
+}
+
+/* Account Actions */
+
+.navbar-profile-icon {
+    color: var(--primary);
+    font-size: 1.25rem;
+}
+
+.navbar .dropdown-menu {
+    border-radius: 10px;
+    min-width: 190px;
+    padding: 8px;
+}
+
+.navbar .dropdown-item {
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.navbar .dropdown-item:hover {
+    background-color: var(--primary-light);
+    color: var(--primary);
+}
+
+/* Mobile Toggle */
+
+.navbar .navbar-toggler {
+    border-color: var(--border-color);
+}
+
+.navbar .navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(81, 69, 205, 0.12);
+}
+
+.navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(37,36,58,0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Mobile Navigation */
+
+@media (max-width: 991px) {
+
+    .navbar .navbar-collapse {
+        padding: 15px 0 5px;
+    }
+
+    .navbar .navbar-nav {
+        gap: 4px;
+    }
+
+    .navbar .nav-link {
+        padding: 10px 12px;
+    }
+
+    .navbar-account-actions {
+        width: 100%;
+    }
+
+    .navbar-account-actions .dropdown {
+        width: 100%;
+    }
+
+    .navbar-account-actions .dropdown-toggle {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .navbar-account-actions .dropdown-menu {
+        width: 100%;
+    }
 }

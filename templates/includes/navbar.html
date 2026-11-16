@@ -1,33 +1,86 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
     <div class="container">
-        <!-- Left side: Brand and navigation -->
-        <div class="d-flex align-items-center gap-4">
-            <a class="navbar-brand fw-bold mb-0"
-               href="{% url 'quizzes:dashboard' %}">QuizForge</a>
-            <a class="nav-link text-light"
-               href="{% url 'quizzes:explore_quizzes' %}">Explore Quizzes</a>
-            {% if user.is_authenticated %}
-                <a class="nav-link text-light"
-                   href="{% url 'quizzes:attempt_history' %}">Attempt History</a>
-            {% endif %}
-        </div>
-        <!-- Right side: Account actions -->
-        <div class="d-flex align-items-center gap-3">
-            {% if user.is_authenticated %}
-                <a href="{% url 'accounts:profile' %}"
-                   class="text-light text-decoration-none">
-                    <i class="bi bi-person-circle me-1"></i>
-                    {{ user.username }}
-                </a>
-                <form method="post" action="{% url 'accounts:logout' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
-                </form>
-            {% else %}
-                <a href="{% url 'accounts:login' %}"
-                   class="btn btn-outline-light btn-sm">Login</a>
-                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Register</a>
-            {% endif %}
+        <!-- Brand -->
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2"
+           href="{% if user.is_authenticated %}{% url 'quizzes:dashboard' %}{% else %}{% url 'quizzes:explore_quizzes' %}{% endif %}">
+            <span class="navbar-logo">
+                <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
+            </span>
+            <span class="navbar-brand-text">QuizForge</span>
+        </a>
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar"
+                aria-expanded="false"
+                aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <!-- Navigation -->
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto ms-lg-4 gap-lg-2">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link px-3" href="{% url 'quizzes:dashboard' %}">
+                            <i class="bi bi-grid me-1"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link px-3" href="{% url 'quizzes:explore_quizzes' %}">
+                        <i class="bi bi-compass me-1"></i>
+                        Explore Quizzes
+                    </a>
+                </li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link px-3" href="{% url 'quizzes:attempt_history' %}">
+                            <i class="bi bi-clock-history me-1"></i>
+                            Attempt History
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+            <!-- Account Actions -->
+            <div class="navbar-account-actions d-flex align-items-lg-center gap-2 mt-3 mt-lg-0">
+                {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <button class="btn btn-light border dropdown-toggle d-flex align-items-center gap-2"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <i class="bi bi-person-circle navbar-profile-icon"></i>
+                            <span>{{ user.username }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'accounts:profile' %}">
+                                    <i class="bi bi-person me-2"></i>
+                                    My Profile
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <form method="post" action="{% url 'accounts:logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item py-2 text-danger">
+                                        <i class="bi bi-box-arrow-right me-2"></i>
+                                        Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary">Login</a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-primary">Get Started</a>
+                {% endif %}
+            </div>
         </div>
     </div>
 </nav>
