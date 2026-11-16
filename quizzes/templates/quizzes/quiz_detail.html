@@ -82,6 +82,10 @@
                         <a href="{% url 'quizzes:edit_question' question.id %}"
                            class="btn btn-sm btn-outline-secondary">Edit Question</a>
                     {% endif %}
+                    {% if quiz.status == "draft" %}
+                        <a href="{% url 'quizzes:delete_question' question.id %}"
+                           class="btn btn-sm btn-outline-danger">Delete Question</a>
+                    {% endif %}
                 </div>
             </div>
         {% empty %}

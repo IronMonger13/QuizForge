@@ -22,4 +22,9 @@ urlpatterns = [
         views.edit_question,
         name="edit_question",
     ),
+    path(
+        "question/<int:question_id>/delete/",
+        views.delete_question,
+        name="delete_question",
+    ),
 ]

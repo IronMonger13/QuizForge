@@ -251,6 +251,49 @@ def edit_question(request, question_id):
 
 
 @login_required
+def delete_question(request, question_id):
+    question = get_object_or_404(
+        Question,
+        id=question_id,
+        quiz__owner=request.user,
+        quiz__status=Quiz.Status.DRAFT,
+        quiz__is_sample=False,
+    )
+
+    quiz = question.quiz
+
+    # Prevent deletion if the quiz already has attempts.
+    if quiz.attempts.exists():
+        return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+    if request.method == "POST":
+        with transaction.atomic():
+            question.delete()
+
+            # Renumber the remaining questions.
+            remaining_questions = quiz.questions.order_by("order", "id")
+
+            for new_order, remaining_question in enumerate(
+                remaining_questions,
+                start=1,
+            ):
+                if remaining_question.order != new_order:
+                    remaining_question.order = new_order
+                    remaining_question.save(update_fields=["order"])
+
+        return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
+    return render(
+        request,
+        "quizzes/delete_question.html",
+        {
+            "question": question,
+            "quiz": quiz,
+        },
+    )
+
+
+@login_required
 def quiz_detail(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, owner=request.user)
     questions = quiz.questions.prefetch_related("choices")
