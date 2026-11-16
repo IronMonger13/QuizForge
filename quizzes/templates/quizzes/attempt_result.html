@@ -6,60 +6,97 @@
     <div class="container py-5">
         <!-- Result summary -->
         <div class="card border-0 shadow-sm mb-5">
-            <div class="card-body text-center p-5">
+            <div class="card-body text-center p-4 p-md-5">
                 <h2 class="fw-bold mb-2">Quiz Completed!</h2>
                 <p class="text-muted">{{ attempt.quiz.title }}</p>
                 <div class="my-4">
                     <h1 class="display-3 fw-bold text-primary">{{ attempt.score }} / {{ attempt.total_marks }}</h1>
-                    <p class="text-muted mb-0">Your Final Score</p>
-                </div>
-                {% if attempt.total_marks > 0 %}
-                    <h4 class="fw-semibold">{% widthratio attempt.score attempt.total_marks 100 %}%</h4>
+                    <p class="text-muted mb-2">Your Final Score</p>
+                    <h4 class="fw-semibold">{{ percentage }}%</h4>
                     <p class="text-muted">Overall Percentage</p>
-                {% endif %}
+                </div>
+                <hr class="my-4">
+                <!-- Performance statistics -->
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="bg-light rounded p-3 h-100">
+                            <h3 class="fw-bold mb-1">{{ total_questions }}</h3>
+                            <p class="text-muted small mb-0">Total Questions Answered</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-success-subtle rounded p-3 h-100">
+                            <h3 class="fw-bold text-success mb-1">{{ correct_answers }}</h3>
+                            <p class="text-muted small mb-0">Correct</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-danger-subtle rounded p-3 h-100">
+                            <h3 class="fw-bold text-danger mb-1">{{ incorrect_answers }}</h3>
+                            <p class="text-muted small mb-0">Incorrect</p>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="bg-warning-subtle rounded p-3 h-100">
+                            <h3 class="fw-bold text-warning mb-1">{{ unanswered_questions }}</h3>
+                            <p class="text-muted small mb-0">Unanswered</p>
+                        </div>
+                    </div>
+                </div>
                 <a href="{% url 'quizzes:explore_quizzes' %}"
-                   class="btn btn-primary mt-3">Explore More Quizzes</a>
+                   class="btn btn-primary mt-4">Explore More Quizzes</a>
             </div>
         </div>
         <!-- Answer review -->
         <div class="mb-4">
             <h3 class="fw-bold">Answer Review</h3>
-            <p class="text-muted">Review your answers and see which questions you got right.</p>
+            <p class="text-muted">Review your answers and see the correct answer for every question.</p>
         </div>
-        {% for answer in answers %}
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-semibold mb-0">Question {{ forloop.counter }}</h5>
-                        {% if answer.is_correct %}
-                            <span class="badge bg-success">Correct</span>
-                        {% else %}
-                            <span class="badge bg-danger">Incorrect</span>
-                        {% endif %}
-                    </div>
-                    <p class="mb-3">{{ answer.question.question_text }}</p>
-                    {% for choice in answer.question.choices.all %}
-                        <div class="border rounded p-3 mb-2 {% if choice.is_correct %} border-success bg-success-subtle {% elif choice.id == answer.selected_choice_id %} border-danger bg-danger-subtle {% endif %}">
-                            {{ forloop.counter }}.
-                            {{ choice.choice_text }}
-                            {% if choice.is_correct %}
-                                <span class="badge bg-success ms-2">Correct Answer</span>
-                            {% elif choice.id == answer.selected_choice_id %}
-                                <span class="badge bg-danger ms-2">Your Answer</span>
+        {% for item in review_items %}
+            {% with question=item.question answer=item.answer %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <!-- Question heading and status -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-semibold mb-0">Question {{ forloop.counter }}</h5>
+                            {% if not answer or not answer.selected_choice %}
+                                <span class="badge bg-warning text-dark">Unanswered</span>
+                            {% elif answer.is_correct %}
+                                <span class="badge bg-success">Correct</span>
+                            {% else %}
+                                <span class="badge bg-danger">Incorrect</span>
                             {% endif %}
                         </div>
-                    {% endfor %}
-                    {% if not answer.selected_choice %}
-                        <p class="text-danger small mb-0">You did not answer this question.</p>
-                    {% endif %}
-                    <p class="small text-muted mt-3 mb-0">
-                        Marks awarded: {{ answer.marks_awarded }} /
-                        {{ answer.question.marks }}
-                    </p>
+                        <p class="mb-3">{{ question.question_text }}</p>
+                        <!-- Answer choices -->
+                        {% for choice in question.choices.all %}
+                            <div class="border rounded p-3 mb-2 {% if choice.is_correct %} border-success bg-success-subtle {% elif answer and choice.id == answer.selected_choice_id %} border-danger bg-danger-subtle {% endif %}">
+                                {{ forloop.counter }}.
+                                {{ choice.choice_text }}
+                                {% if choice.is_correct %}
+                                    <span class="badge bg-success ms-2">Correct Answer</span>
+                                {% elif answer and choice.id == answer.selected_choice_id %}
+                                    <span class="badge bg-danger ms-2">Your Answer</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        {% if not answer or not answer.selected_choice %}
+                            <p class="text-warning small mb-0">You did not answer this question.</p>
+                        {% endif %}
+                        <p class="small text-muted mt-3 mb-0">
+                            Marks awarded:
+                            {% if answer %}
+                                {{ answer.marks_awarded }}
+                            {% else %}
+                                0
+                            {% endif %}
+                            / {{ question.marks }}
+                        </p>
+                    </div>
                 </div>
-            </div>
+            {% endwith %}
         {% empty %}
-            <p class="text-muted">No answer records found.</p>
+            <p class="text-muted">No questions found for this quiz.</p>
         {% endfor %}
         <div class="mt-4">
             <a href="{% url 'quizzes:dashboard' %}"

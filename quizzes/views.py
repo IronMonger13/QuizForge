@@ -667,11 +667,60 @@ def attempt_result(request, attempt_id):
         user=request.user,
         status=QuizAttempt.Status.COMPLETED,
     )
-    answers = attempt.answers.select_related(
-        "question", "selected_choice"
-    ).prefetch_related("question__choices")
+
+    # Retrieve every question from the quiz.
+    questions = attempt.quiz.questions.prefetch_related("choices").order_by("order")
+
+    # Retrieve answers saved during the attempt.
+    answers = {
+        answer.question_id: answer
+        for answer in attempt.answers.select_related("selected_choice")
+    }
+
+    # Match every question with its answer, if one exists.
+    review_items = []
+
+    for question in questions:
+        answer = answers.get(question.id)
+
+        review_items.append(
+            {
+                "question": question,
+                "answer": answer,
+            }
+        )
+
+    # Calculate statistics across ALL questions.
+    total_questions = len(review_items)
+
+    correct_answers = sum(
+        1 for item in review_items if item["answer"] and item["answer"].is_correct
+    )
+
+    unanswered_questions = sum(
+        1
+        for item in review_items
+        if (item["answer"] is None or item["answer"].selected_choice is None)
+    )
+
+    incorrect_answers = total_questions - correct_answers - unanswered_questions
+
+    percentage = (
+        (attempt.score / attempt.total_marks) * 100 if attempt.total_marks > 0 else 0
+    )
+
     return render(
-        request, "quizzes/attempt_result.html", {"attempt": attempt, "answers": answers}
+        request,
+        "quizzes/attempt_result.html",
+        {
+            "attempt": attempt,
+            "review_items": review_items,
+            "total_questions": total_questions,
+            "correct_answers": correct_answers,
+            "incorrect_answers": incorrect_answers,
+            "unanswered_questions": unanswered_questions,
+            "percentage": round(percentage, 2),
+        },
     )
 
 
