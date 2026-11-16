@@ -5,6 +5,8 @@ from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Max, 
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.http import JsonResponse
+from datetime import timedelta
 
 from .forms import QuizForm, QuestionForm, ChoiceFormSet, EditChoiceFormSet
 from .models import Category, Quiz, Question, QuizAttempt, AttemptAnswer, Choice
@@ -352,32 +354,56 @@ def publish_quiz(request, quiz_id):
 
 @login_required
 def take_quiz(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, status=Quiz.Status.PUBLISHED)
+    quiz = get_object_or_404(
+        Quiz,
+        id=quiz_id,
+        status=Quiz.Status.PUBLISHED,
+    )
+
     # Creators cannot attempt their own quizzes.
     if quiz.owner_id == request.user.id:
         return redirect("quizzes:quiz_detail", quiz_id=quiz.id)
+
     questions = quiz.questions.prefetch_related("choices")
+
+    # POST request: process quiz submission.
     if request.method == "POST":
-        # Lock the attempt until the entire submission is processed.
         with transaction.atomic():
+
+            # Lock the attempt while processing submission.
             attempt = get_object_or_404(
                 QuizAttempt.objects.select_for_update(),
                 user=request.user,
                 quiz=quiz,
                 status=QuizAttempt.Status.IN_PROGRESS,
             )
+
+            # Check expiration using the server's clock.
+            is_expired = (
+                attempt.expires_at is not None and timezone.now() >= attempt.expires_at
+            )
+
+            # Retrieve answers saved in the database.
+            saved_answers = {
+                answer.question_id: answer.selected_choice
+                for answer in AttemptAnswer.objects.filter(
+                    attempt=attempt
+                ).select_related("selected_choice")
+            }
+
             selected_answers = []
             submission_error = None
+
             for question in questions:
-                choice_id = request.POST.get(f"question_{question.id}")
-                if not choice_id:
+                selected_choice = saved_answers.get(question.id)
+
+                # Before expiration, every question must be answered.
+                if selected_choice is None and not is_expired:
                     submission_error = "Please answer every question before submitting."
                     break
-                selected_choice = question.choices.filter(id=choice_id).first()
-                if not selected_choice:
-                    submission_error = "Invalid answer detected. Please try again."
-                    break
+
                 selected_answers.append((question, selected_choice))
+
             if submission_error:
                 return render(
                     request,
@@ -385,18 +411,29 @@ def take_quiz(request, quiz_id):
                     {
                         "quiz": quiz,
                         "questions": questions,
+                        "attempt": attempt,
                         "submission_error": submission_error,
+                        "saved_answers": {
+                            question_id: choice.id
+                            for question_id, choice in saved_answers.items()
+                            if choice is not None
+                        },
                     },
                 )
+
+            # Calculate the score using only saved answers.
             score = sum(
                 question.marks
                 for question, choice in selected_answers
-                if choice.is_correct
+                if choice is not None and choice.is_correct
             )
+
+            # Complete the attempt.
             attempt.score = score
             attempt.total_marks = sum(question.marks for question in questions)
             attempt.completed_at = timezone.now()
             attempt.status = QuizAttempt.Status.COMPLETED
+
             attempt.save(
                 update_fields=[
                     "score",
@@ -405,33 +442,151 @@ def take_quiz(request, quiz_id):
                     "status",
                 ]
             )
+
+            # Update individual answer records.
             for question, selected_choice in selected_answers:
-                is_correct = selected_choice.is_correct
-                answer = AttemptAnswer(
+                is_correct = selected_choice is not None and selected_choice.is_correct
+
+                AttemptAnswer.objects.filter(
                     attempt=attempt,
                     question=question,
-                    selected_choice=selected_choice,
+                ).update(
                     is_correct=is_correct,
                     marks_awarded=(question.marks if is_correct else 0),
                 )
-                answer.full_clean()
-                answer.save()
-        return redirect("quizzes:attempt_result", attempt_id=attempt.id)
+
+        return redirect(
+            "quizzes:attempt_result",
+            attempt_id=attempt.id,
+        )
+
     # GET request: reuse an unfinished attempt if one exists.
     attempt = (
         QuizAttempt.objects.filter(
-            user=request.user, quiz=quiz, status=QuizAttempt.Status.IN_PROGRESS
+            user=request.user,
+            quiz=quiz,
+            status=QuizAttempt.Status.IN_PROGRESS,
         )
         .order_by("-started_at")
         .first()
     )
-    # Create a new attempt only when opening the quiz.
+
+    # Automatically complete expired attempts.
+    if (
+        attempt is not None
+        and attempt.expires_at is not None
+        and timezone.now() >= attempt.expires_at
+    ):
+        with transaction.atomic():
+
+            # Lock the attempt before completing it.
+            attempt = (
+                QuizAttempt.objects.select_for_update()
+                .filter(
+                    id=attempt.id,
+                    user=request.user,
+                    status=QuizAttempt.Status.IN_PROGRESS,
+                )
+                .first()
+            )
+
+            if attempt is not None:
+                # Retrieve answers saved before expiration.
+                saved_answers = {
+                    answer.question_id: answer.selected_choice
+                    for answer in AttemptAnswer.objects.filter(
+                        attempt=attempt
+                    ).select_related("selected_choice")
+                }
+
+                # Calculate the score using saved answers only.
+                score = sum(
+                    question.marks
+                    for question in questions
+                    if (
+                        saved_answers.get(question.id) is not None
+                        and saved_answers[question.id].is_correct
+                    )
+                )
+
+                attempt.score = score
+                attempt.total_marks = sum(question.marks for question in questions)
+                attempt.completed_at = timezone.now()
+                attempt.status = QuizAttempt.Status.COMPLETED
+
+                attempt.save(
+                    update_fields=[
+                        "score",
+                        "total_marks",
+                        "completed_at",
+                        "status",
+                    ]
+                )
+
+                # Update correctness and marks for saved answers.
+                for question in questions:
+                    selected_choice = saved_answers.get(question.id)
+
+                    if selected_choice is not None:
+                        is_correct = selected_choice.is_correct
+
+                        AttemptAnswer.objects.filter(
+                            attempt=attempt,
+                            question=question,
+                        ).update(
+                            is_correct=is_correct,
+                            marks_awarded=(question.marks if is_correct else 0),
+                        )
+
+                return redirect(
+                    "quizzes:attempt_result",
+                    attempt_id=attempt.id,
+                )
+
+            # Another request may have completed the attempt already.
+            completed_attempt = (
+                QuizAttempt.objects.filter(
+                    user=request.user,
+                    quiz=quiz,
+                    status=QuizAttempt.Status.COMPLETED,
+                )
+                .order_by("-completed_at")
+                .first()
+            )
+
+            if completed_attempt:
+                return redirect(
+                    "quizzes:attempt_result",
+                    attempt_id=completed_attempt.id,
+                )
+
+    # Create a new attempt only when one does not already exist.
     if attempt is None:
+        expires_at = None
+
+        if quiz.time_limit:
+            expires_at = timezone.now() + timedelta(minutes=quiz.time_limit)
+
         attempt = QuizAttempt.objects.create(
             user=request.user,
             quiz=quiz,
             total_marks=sum(question.marks for question in questions),
+            expires_at=expires_at,
         )
+
+    # Retrieve previously saved answers for this attempt.
+
+    saved_answers = dict(
+        AttemptAnswer.objects.filter(attempt=attempt).values_list(
+            "question_id",
+            "selected_choice_id",
+        )
+    )
+
+    # Attach the saved choice ID to each question for the template.
+    for question in questions:
+        question.saved_choice_id = saved_answers.get(question.id)
+
     return render(
         request,
         "quizzes/take_quiz.html",
@@ -440,6 +595,67 @@ def take_quiz(request, quiz_id):
             "questions": questions,
             "attempt": attempt,
         },
+    )
+
+
+@login_required
+def save_quiz_answer(request, attempt_id):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Invalid request method."},
+            status=405,
+        )
+
+    with transaction.atomic():
+        # Lock the attempt while saving the answer.
+        attempt = get_object_or_404(
+            QuizAttempt.objects.select_for_update(),
+            id=attempt_id,
+            user=request.user,
+            status=QuizAttempt.Status.IN_PROGRESS,
+        )
+
+        # Prevent answers from being changed after expiration.
+        if attempt.expires_at is not None and timezone.now() >= attempt.expires_at:
+            return JsonResponse(
+                {"error": "Time has expired."},
+                status=400,
+            )
+
+        question_id = request.POST.get("question_id")
+        choice_id = request.POST.get("choice_id")
+
+        # Verify that the question belongs to this quiz.
+        question = get_object_or_404(
+            Question,
+            id=question_id,
+            quiz=attempt.quiz,
+        )
+
+        # Verify that the selected choice belongs to this question.
+        selected_choice = get_object_or_404(
+            Choice,
+            id=choice_id,
+            question=question,
+        )
+
+        is_correct = selected_choice.is_correct
+
+        answer, created = AttemptAnswer.objects.update_or_create(
+            attempt=attempt,
+            question=question,
+            defaults={
+                "selected_choice": selected_choice,
+                "is_correct": is_correct,
+                "marks_awarded": (question.marks if is_correct else 0),
+            },
+        )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Answer saved successfully.",
+        }
     )
 
 

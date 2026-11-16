@@ -16,11 +16,21 @@
                     <span>No Time Limit</span>
                 {% endif %}
             </div>
+            {% if attempt.expires_at %}
+                <div id="quiz-timer"
+                     class="alert alert-info d-inline-block mt-3 mb-0"
+                     data-expires-at="{{ attempt.expires_at|date:'c' }}">
+                    <strong>Time Remaining:</strong>
+                    <span id="timer-display">Calculating...</span>
+                </div>
+            {% endif %}
+            <div id="save-status" class="small mt-3 text-muted">Your answers will be saved automatically.</div>
         </div>
         <hr class="my-4">
         <!-- Questions -->
         <form method="post"
-              onsubmit="return confirm('Are you sure you want to submit your answers?');">
+              id="quiz-form"
+              data-save-url="{% url 'quizzes:save_quiz_answer' attempt.id %}">
             {% if submission_error %}
                 <div class="alert alert-danger">{{ submission_error }}</div>
             {% endif %}
@@ -43,7 +53,8 @@
                                         <input type="radio"
                                                name="question_{{ question.id }}"
                                                value="{{ choice.id }}"
-                                               required>
+                                               data-question-id="{{ question.id }}"
+                                               {% if choice.id == question.saved_choice_id %} checked {% endif %}>
                                         <span>{{ choice.choice_text }}</span>
                                     </label>
                                 </div>
@@ -56,8 +67,184 @@
             <div class="d-flex justify-content-between mt-4">
                 <a href="{% url 'quizzes:explore_quizzes' %}"
                    class="btn btn-outline-secondary">Exit Quiz</a>
-                <button type="submit" class="btn btn-primary px-4">Submit Answers</button>
+                <button type="submit" class="btn btn-primary px-4" id="submit-quiz">Submit Answers</button>
             </div>
         </form>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const quizForm = document.getElementById("quiz-form");
+            const saveStatus = document.getElementById("save-status");
+            const saveUrl = quizForm.dataset.saveUrl;
+
+            let pendingSaves = 0;
+            let submissionStarted = false;
+
+            // Countdown timer based on the server-provided expiration time.
+            const timerElement = document.getElementById("quiz-timer");
+
+            if (timerElement) {
+                const timerDisplay = document.getElementById("timer-display");
+
+                const expiresAt = new Date(
+                    timerElement.dataset.expiresAt
+                ).getTime();
+
+                function updateTimer() {
+                    const remaining = Math.max(
+                        0,
+                        Math.floor((expiresAt - Date.now()) / 1000)
+                    );
+
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+
+                    timerDisplay.textContent =
+                        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+                    if (remaining <= 60) {
+                        timerElement.className =
+                            "alert alert-danger d-inline-block mt-3 mb-0";
+                    } else if (remaining <= 300) {
+                        timerElement.className =
+                            "alert alert-warning d-inline-block mt-3 mb-0";
+                    }
+
+                    if (remaining <= 0) {
+                        clearInterval(timerInterval);
+                        autoSubmitQuiz();
+                    }
+                }
+
+                updateTimer();
+
+                const timerInterval = setInterval(updateTimer, 1000);
+            }
+
+            // Automatically submit after all pending answer saves finish.
+            async function autoSubmitQuiz() {
+                if (submissionStarted) return;
+
+                submissionStarted = true;
+
+                updateSaveStatus(
+                    "Time is up. Submitting your saved answers...",
+                    "text-danger"
+                );
+
+                while (pendingSaves > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                const submitButton = document.getElementById("submit-quiz");
+
+                submitButton.disabled = true;
+                submitButton.textContent = "Submitting...";
+
+                quizForm.submit();
+            }
+
+            function updateSaveStatus(message, color = "text-muted") {
+                saveStatus.textContent = message;
+                saveStatus.className = `small mt-3 ${color}`;
+            }
+
+            document.querySelectorAll(
+                'input[type="radio"][data-question-id]'
+            ).forEach(function (radio) {
+
+                radio.addEventListener("change", async function () {
+                    if (submissionStarted) return;
+
+                    const questionId = this.dataset.questionId;
+                    const choiceId = this.value;
+
+                    pendingSaves++;
+                    updateSaveStatus("Saving your answer...", "text-primary");
+
+                    try {
+                        const response = await fetch(saveUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded",
+                                "X-CSRFToken": document.querySelector(
+                                    '[name="csrfmiddlewaretoken"]'
+                                ).value
+                            },
+                            body: new URLSearchParams({
+                                question_id: questionId,
+                                choice_id: choiceId
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.error || "Unable to save answer.");
+                        }
+
+                        updateSaveStatus(
+                            "All answers are being saved automatically.",
+                            "text-success"
+                        );
+
+                    } catch (error) {
+                        updateSaveStatus(
+                            "Unable to save your answer. Please try again.",
+                            "text-danger"
+                        );
+                    } finally {
+                        pendingSaves--;
+                    }
+                });
+            });
+
+            quizForm.addEventListener("submit", async function (event) {
+                if (submissionStarted) return;
+
+                event.preventDefault();
+
+                if (!quizForm.reportValidity()) return;
+
+                if (!confirm("Are you sure you want to submit your answers?")) {
+                    return;
+                }
+
+                if (pendingSaves > 0) {
+                    updateSaveStatus(
+                        "Please wait while your answers are saved.",
+                        "text-primary"
+                    );
+
+                    const waitForSaves = async () => {
+                        while (pendingSaves > 0) {
+                            await new Promise(resolve =>
+                                setTimeout(resolve, 100)
+                            );
+                        }
+
+                        if (!submissionStarted) {
+                            submitQuiz();
+                        }
+                    };
+
+                    await waitForSaves();
+                    return;
+                }
+
+                submitQuiz();
+
+            });
+
+            function submitQuiz() {
+                submissionStarted = true;
+
+                const submitButton = document.getElementById("submit-quiz");
+                submitButton.disabled = true;
+                submitButton.textContent = "Submitting...";
+
+                quizForm.submit();
+            }
+        });
+    </script>
 {% endblock content %}

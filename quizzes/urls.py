@@ -27,4 +27,9 @@ urlpatterns = [
         views.delete_question,
         name="delete_question",
     ),
+    path(
+        "attempt/<int:attempt_id>/save-answer/",
+        views.save_quiz_answer,
+        name="save_quiz_answer",
+    ),
 ]

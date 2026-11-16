@@ -108,6 +108,7 @@ class QuizAttempt(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="attempts")
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
     score = models.PositiveIntegerField(default=0)
     total_marks = models.PositiveIntegerField(default=0)
     status = models.CharField(
