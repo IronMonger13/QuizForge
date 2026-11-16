@@ -47,7 +47,7 @@ def user_logout(request):
     if request.method == "POST":
         logout(request)
 
-    return redirect("accounts:login")
+    return redirect("home")
 
 
 @login_required
