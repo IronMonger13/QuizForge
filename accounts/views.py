@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.views.decorators.cache import never_cache
 
 from .forms import RegistrationForm, LoginForm, ProfileForm
 
@@ -50,6 +51,7 @@ def user_logout(request):
 
 
 @login_required
+@never_cache
 def profile(request):
 
     # Fetch a separate User instance instead of modifying request.user.

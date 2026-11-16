@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib import messages
+from django.views.decorators.cache import never_cache
 from datetime import timedelta
 
 from .forms import (
@@ -29,6 +30,7 @@ from .models import (
 
 # Create your views here.
 @login_required
+@never_cache
 def dashboard(request):
     # Quizzes created by the logged-in user.
     my_quizzes = (
@@ -126,6 +128,7 @@ def dashboard(request):
 
 
 @login_required
+@never_cache
 def create_quiz(request):
     if request.method == "POST":
         form = QuizForm(request.POST)
@@ -141,6 +144,7 @@ def create_quiz(request):
 
 
 @login_required
+@never_cache
 def edit_quiz(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -175,6 +179,7 @@ def edit_quiz(request, quiz_id):
 
 
 @login_required
+@never_cache
 def delete_quiz(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -199,6 +204,7 @@ def delete_quiz(request, quiz_id):
 
 
 @login_required
+@never_cache
 def add_question(request, quiz_id):
     quiz = get_object_or_404(
         Quiz, id=quiz_id, owner=request.user, status=Quiz.Status.DRAFT
@@ -249,6 +255,7 @@ def add_question(request, quiz_id):
 
 
 @login_required
+@never_cache
 def edit_question(request, question_id):
     question = get_object_or_404(
         Question,
@@ -334,6 +341,7 @@ def edit_question(request, question_id):
 
 
 @login_required
+@never_cache
 def delete_question(request, question_id):
     question = get_object_or_404(
         Question,
@@ -377,6 +385,7 @@ def delete_question(request, question_id):
 
 
 @login_required
+@never_cache
 def quiz_detail(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -449,6 +458,7 @@ def quiz_detail(request, quiz_id):
 
 
 @login_required
+@never_cache
 def quiz_attempt_history(request, quiz_id):
     # Only the quiz creator can access this page.
     quiz = get_object_or_404(
@@ -508,6 +518,7 @@ def quiz_attempt_history(request, quiz_id):
 
 @login_required
 @require_POST
+@never_cache
 def publish_quiz(request, quiz_id):
     quiz = get_object_or_404(
         Quiz, id=quiz_id, owner=request.user, status=Quiz.Status.DRAFT
@@ -556,6 +567,7 @@ def publish_quiz(request, quiz_id):
 
 @login_required
 @require_POST
+@never_cache
 def unpublish_quiz(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -572,6 +584,7 @@ def unpublish_quiz(request, quiz_id):
 
 
 @login_required
+@never_cache
 def take_quiz(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -818,6 +831,7 @@ def take_quiz(request, quiz_id):
 
 
 @login_required
+@never_cache
 def save_quiz_answer(request, attempt_id):
     if request.method != "POST":
         return JsonResponse(
@@ -879,6 +893,7 @@ def save_quiz_answer(request, attempt_id):
 
 
 @login_required
+@never_cache
 def submit_quiz_feedback(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -944,6 +959,7 @@ def submit_quiz_feedback(request, quiz_id):
 
 @login_required
 @require_POST
+@never_cache
 def delete_quiz_feedback(request, quiz_id):
     quiz = get_object_or_404(
         Quiz,
@@ -974,6 +990,7 @@ def delete_quiz_feedback(request, quiz_id):
 
 
 @login_required
+@never_cache
 def attempt_result(request, attempt_id):
     attempt = get_object_or_404(
         QuizAttempt.objects.select_related("quiz", "user").filter(
@@ -1152,6 +1169,7 @@ def quiz_overview(request, quiz_id):
 
 
 @login_required
+@never_cache
 def attempt_history(request):
     attempts = list(
         QuizAttempt.objects.filter(
