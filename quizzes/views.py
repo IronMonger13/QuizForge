@@ -15,31 +15,69 @@ from .models import Category, Quiz, Question, QuizAttempt, AttemptAnswer, Choice
 # Create your views here.
 @login_required
 def dashboard(request):
+    # Quizzes created by the logged-in user.
     my_quizzes = (
         Quiz.objects.filter(owner=request.user)
         .select_related("category")
         .annotate(question_count=Count("questions"))
     )
+
+    # Quiz creation statistics.
+    quiz_stats = my_quizzes.aggregate(
+        total_quizzes=Count("id"),
+        published_quizzes=Count(
+            "id",
+            filter=Q(status=Quiz.Status.PUBLISHED),
+        ),
+        draft_quizzes=Count(
+            "id",
+            filter=Q(status=Quiz.Status.DRAFT),
+        ),
+    )
+
+    # Completed attempts by the logged-in user.
     completed_attempts = QuizAttempt.objects.filter(
         user=request.user,
         status=QuizAttempt.Status.COMPLETED,
         total_marks__gt=0,
     )
+
     percentage_expression = ExpressionWrapper(
         F("score") * 100.0 / F("total_marks"),
         output_field=FloatField(),
     )
+
     attempt_stats = completed_attempts.aggregate(
         total_attempts=Count("id"),
         average_score=Avg(percentage_expression),
         highest_score=Max(percentage_expression),
     )
+
+    # Latest five completed quiz attempts.
+    recent_attempts = (
+        QuizAttempt.objects.filter(
+            user=request.user,
+            status=QuizAttempt.Status.COMPLETED,
+        )
+        .select_related("quiz")
+        .order_by("-completed_at")[:3]
+    )
+
+    for attempt in recent_attempts:
+        attempt.percentage = (
+            (attempt.score / attempt.total_marks) * 100
+            if attempt.total_marks > 0
+            else 0
+        )
+
     return render(
         request,
         "quizzes/dashboard.html",
         {
             "my_quizzes": my_quizzes,
+            "quiz_stats": quiz_stats,
             "attempt_stats": attempt_stats,
+            "recent_attempts": recent_attempts,
         },
     )
 

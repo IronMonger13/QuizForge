@@ -39,7 +39,64 @@
                 </div>
             </div>
         </div>
+        <!-- Quiz Creation Statistics -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Quizzes Created</p>
+                        <h3 class="fw-bold mb-0">{{ quiz_stats.total_quizzes }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Published Quizzes</p>
+                        <h3 class="fw-bold text-success mb-0">{{ quiz_stats.published_quizzes }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <p class="text-muted mb-2">Draft Quizzes</p>
+                        <h3 class="fw-bold text-secondary mb-0">{{ quiz_stats.draft_quizzes }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
         <hr class="my-4">
+        <!-- Recent Activity -->
+        <hr class="my-4">
+        <div class="mb-3">
+            <h4 class="fw-bold">Recent Activity</h4>
+            <p class="text-muted">Your five most recent completed quiz attempts.</p>
+        </div>
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-0">
+                {% for attempt in recent_attempts %}
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div>
+                            <h6 class="fw-semibold mb-1">{{ attempt.quiz.title }}</h6>
+                            <small class="text-muted">{{ attempt.completed_at|date:"d M Y, h:i A" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="fw-bold">{{ attempt.score }}/{{ attempt.total_marks }}</span>
+                            <div>
+                                <small class="text-muted">{{ attempt.percentage|floatformat:1 }}%</small>
+                            </div>
+                        </div>
+                        <a href="{% url 'quizzes:attempt_result' attempt.id %}"
+                           class="btn btn-sm btn-outline-primary">View Result</a>
+                    </div>
+                {% empty %}
+                    <div class="text-center p-4">
+                        <p class="text-muted mb-0">You haven't completed any quizzes yet.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
         <!-- My quizzes -->
         <div class="mb-4">
             <h4 class="fw-bold">My Quizzes</h4>
