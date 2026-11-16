@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}
+    Home | QuizForge
+{% endblock title %}
+{% block content %}
+    <section class="home-hero">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <!-- Hero Content -->
+                <div class="col-lg-6">
+                    <span class="home-hero-label">
+                        <i class="bi bi-stars me-2"></i>
+                        Your knowledge, your challenge
+                    </span>
+                    <h1 class="home-hero-title">
+                        Learn. Challenge.
+                        <span>Create.</span>
+                    </h1>
+                    <p class="home-hero-description">
+                        Discover quizzes, test your knowledge and create
+                        challenges of your own. Learning becomes more
+                        engaging when you put yourself to the test.
+                    </p>
+                    <div class="home-hero-actions">
+                        <a href="{% url 'quizzes:explore_quizzes' %}"
+                           class="btn btn-primary btn-lg">
+                            Explore Quizzes
+                            <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                        {% if not user.is_authenticated %}
+                            <a href="{% url 'accounts:register' %}"
+                               class="btn btn-outline-primary btn-lg">Get Started</a>
+                        {% else %}
+                            <a href="{% url 'quizzes:create_quiz' %}"
+                               class="btn btn-outline-primary btn-lg">Create a Quiz</a>
+                        {% endif %}
+                    </div>
+                    <div class="home-hero-trust">
+                        <div>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Free to explore
+                        </div>
+                        <div>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Create your own quizzes
+                        </div>
+                    </div>
+                </div>
+                <!-- Hero Visual -->
+                <div class="col-lg-6">
+                    <div class="home-hero-visual">
+                        <div class="hero-floating-card hero-floating-top">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                            Learn by doing
+                        </div>
+                        <div class="hero-preview-card">
+                            <div class="hero-preview-header">
+                                <div>
+                                    <span class="hero-preview-eyebrow">QUIZ PREVIEW</span>
+                                    <h5>Test Your Knowledge</h5>
+                                </div>
+                                <span class="hero-preview-icon">
+                                    <i class="bi bi-brain"></i>
+                                </span>
+                            </div>
+                            <div class="hero-preview-progress">
+                                <div class="hero-preview-progress-fill"></div>
+                            </div>
+                            <div class="hero-preview-question">
+                                <span>QUESTION 01 OF 10</span>
+                                <h6>
+                                    Which language is primarily used
+                                    for styling web pages?
+                                </h6>
+                            </div>
+                            <div class="hero-preview-option">
+                                <span>A</span> HTML
+                            </div>
+                            <div class="hero-preview-option selected">
+                                <span>B</span> CSS
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="hero-preview-option">
+                                <span>C</span> Python
+                            </div>
+                            <div class="hero-preview-option">
+                                <span>D</span> SQL
+                            </div>
+                            <div class="hero-preview-footer">
+                                <span><i class="bi bi-clock me-1"></i> 30 seconds</span>
+                                <span>Interactive learning</span>
+                            </div>
+                        </div>
+                        <div class="hero-floating-card hero-floating-bottom">
+                            <i class="bi bi-trophy-fill"></i>
+                            Keep improving!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Featured Quizzes -->
+    <section class="home-featured-section">
+        <div class="container">
+            <!-- Section Heading -->
+            <div class="home-section-heading">
+                <div>
+                    <span class="home-section-label">DISCOVER</span>
+                    <h2>Explore Our Quizzes</h2>
+                    <p>Find something interesting and put your knowledge to the test.</p>
+                </div>
+                <a href="{% url 'quizzes:explore_quizzes' %}" class="home-view-all">
+                    View All Quizzes
+                    <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <!-- Featured Sample Quizzes -->
+            {% if featured_sample_quizzes %}
+                <div class="home-quiz-group">
+                    <div class="home-quiz-group-heading">
+                        <div>
+                            <h4>
+                                <i class="bi bi-award me-2"></i>
+                                Featured Samples
+                            </h4>
+                            <p>Handpicked quizzes to help you get started.</p>
+                        </div>
+                        <span class="home-quiz-count">{{ featured_sample_quizzes|length }} Quizzes</span>
+                    </div>
+                    <div class="row g-4">
+                        {% for quiz in featured_sample_quizzes %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card home-quiz-card h-100">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="home-quiz-card-top">
+                                            <span class="badge bg-primary">Sample Quiz</span>
+                                            <span class="home-quiz-meta">
+                                                <i class="bi bi-list-ul"></i>
+                                                {{ quiz.question_count }} questions
+                                            </span>
+                                        </div>
+                                        <h5>{{ quiz.title }}</h5>
+                                        <p class="home-quiz-description">
+                                            {{ quiz.description|default:"No description provided."|truncatewords:18 }}
+                                        </p>
+                                        <div class="home-quiz-details">
+                                            <span>
+                                                <i class="bi bi-folder2-open"></i>
+                                                {{ quiz.category.name }}
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-people"></i>
+                                                {{ quiz.attempt_count }} attempts
+                                            </span>
+                                        </div>
+                                        <a href="{% url 'quizzes:quiz_overview' quiz.id %}"
+                                           class="btn btn-primary w-100 mt-auto">
+                                            View Quiz
+                                            <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            <!-- Community Quizzes -->
+            {% if featured_community_quizzes %}
+                <div class="home-quiz-group">
+                    <div class="home-quiz-group-heading">
+                        <div>
+                            <h4>
+                                <i class="bi bi-people me-2"></i>
+                                Community Quizzes
+                            </h4>
+                            <p>Discover quizzes created by other QuizForge members.</p>
+                        </div>
+                        <span class="home-quiz-count">{{ featured_community_quizzes|length }} Quizzes</span>
+                    </div>
+                    <div class="row g-4">
+                        {% for quiz in featured_community_quizzes %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card home-quiz-card h-100">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="home-quiz-card-top">
+                                            <span class="badge bg-success">Community</span>
+                                            <span class="home-quiz-meta">
+                                                <i class="bi bi-list-ul"></i>
+                                                {{ quiz.question_count }} questions
+                                            </span>
+                                        </div>
+                                        <h5>{{ quiz.title }}</h5>
+                                        <p class="home-quiz-description">
+                                            {{ quiz.description|default:"No description provided."|truncatewords:18 }}
+                                        </p>
+                                        <div class="home-quiz-details">
+                                            <span>
+                                                <i class="bi bi-folder2-open"></i>
+                                                {{ quiz.category.name }}
+                                            </span>
+                                            <span>
+                                                <i class="bi bi-people"></i>
+                                                {{ quiz.attempt_count }} attempts
+                                            </span>
+                                        </div>
+                                        <a href="{% url 'quizzes:quiz_overview' quiz.id %}"
+                                           class="btn btn-primary w-100 mt-auto">
+                                            View Quiz
+                                            <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            <!-- No Quizzes Available -->
+            {% if not featured_sample_quizzes and not featured_community_quizzes %}
+                <div class="home-no-quizzes">
+                    <i class="bi bi-collection"></i>
+                    <h5>No quizzes available yet</h5>
+                    <p>Check back later as new quizzes are added.</p>
+                    <a href="{% url 'quizzes:explore_quizzes' %}"
+                       class="btn btn-outline-primary">Explore Quizzes</a>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock content %}

@@ -1195,3 +1195,28 @@ def attempt_history(request):
         "quizzes/attempt_history.html",
         {"attempts": attempts},
     )
+
+
+def home(request):
+    published_quizzes = (
+        Quiz.objects.filter(status=Quiz.Status.PUBLISHED)
+        .select_related("category", "owner")
+        .annotate(
+            question_count=Count("questions", distinct=True),
+            attempt_count=Count("attempts", distinct=True),
+        )
+        .order_by("-attempt_count", "-created_at")
+    )
+
+    featured_sample_quizzes = published_quizzes.filter(is_sample=True)[:3]
+
+    featured_community_quizzes = published_quizzes.filter(is_sample=False)[:3]
+
+    return render(
+        request,
+        "home.html",
+        {
+            "featured_sample_quizzes": featured_sample_quizzes,
+            "featured_community_quizzes": featured_community_quizzes,
+        },
+    )
