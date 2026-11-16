@@ -47,3 +47,45 @@ class LoginForm(AuthenticationForm):
             attrs={"class": "form-control", "placeholder": "Enter your password"}
         )
     )
+
+
+class ProfileForm(forms.ModelForm):
+
+    class Meta:
+        model = User
+        fields = ["username", "email"]
+
+        widgets = {
+            "username": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter your username",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Enter your email",
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["username"].help_text = ""
+        self.fields["email"].required = True
+
+    def clean_email(self):
+        email = self.cleaned_data["email"]
+
+        existing_user = User.objects.filter(email__iexact=email).exclude(
+            pk=self.instance.pk
+        )
+
+        if existing_user.exists():
+            raise forms.ValidationError(
+                "This email address is already associated with another account."
+            )
+
+        return email

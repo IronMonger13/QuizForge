@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
-from .forms import RegistrationForm, LoginForm
+from .forms import RegistrationForm, LoginForm, ProfileForm
 
 
 # Create your views here.
@@ -45,3 +47,29 @@ def user_logout(request):
         logout(request)
 
     return redirect("accounts:login")
+
+
+@login_required
+def profile(request):
+
+    # Fetch a separate User instance instead of modifying request.user.
+    profile_user = request.user.__class__.objects.get(pk=request.user.pk)
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=profile_user)
+
+        if form.is_valid():
+            form.save()
+
+            messages.success(request, "Your profile has been updated successfully.")
+
+            return redirect("accounts:profile")
+
+    else:
+        form = ProfileForm(instance=profile_user)
+
+    return render(
+        request,
+        "accounts/profile.html",
+        {"form": form},
+    )
